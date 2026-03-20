@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Primordial Domination v3 · Multiplayer</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Pro:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:#04080f;--panel:rgba(6,12,22,0.93);--border:rgba(180,140,60,0.2);--border-bright:rgba(180,140,60,0.5);
+  --gold:#c8a84b;--gold2:#e8cc7a;--azure:#4a9eff;--azure2:#7fc3ff;--azure-dim:rgba(74,158,255,0.3);
+  --crimson:#e84040;--crimson2:#ff7070;--crimson-dim:rgba(232,64,64,0.3);
+  --text:#d8e4f0;--muted:#7a8fa8;--green:#3dd68c;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:'Crimson Pro',Georgia,serif;color:var(--text)}
+canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
+
+.panel{position:fixed;top:16px;padding:16px;background:var(--panel);border:1px solid var(--border);border-radius:16px;backdrop-filter:blur(16px);box-shadow:0 24px 80px rgba(0,0,0,0.6),inset 0 1px 0 rgba(255,255,255,0.04);z-index:10}
+.panel-left{left:16px;width:300px;max-height:calc(100vh - 32px);overflow-y:auto}
+.panel-right{right:16px;width:280px;max-height:calc(100vh - 32px);overflow-y:auto}
+.panel-title{font-family:'Cinzel',serif;font-size:0.85rem;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold2);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.faction-header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.faction-icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+.faction-icon.azure{background:radial-gradient(circle,rgba(74,158,255,0.3),rgba(74,158,255,0.05));border:1.5px solid var(--azure-dim)}
+.faction-icon.crimson{background:radial-gradient(circle,rgba(232,64,64,0.3),rgba(232,64,64,0.05));border:1.5px solid var(--crimson-dim)}
+.faction-name{font-family:'Cinzel',serif;font-size:0.9rem;font-weight:600}
+.faction-name.azure{color:var(--azure2)}.faction-name.crimson{color:var(--crimson2)}
+.stat-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:0.82rem}
+.stat-label{color:var(--muted);font-style:italic}.stat-val{font-weight:400;color:var(--text)}
+.stat-val.azure{color:var(--azure2)}.stat-val.crimson{color:var(--crimson2)}.stat-val.gold{color:var(--gold2)}
+.resource-block{margin-top:12px;padding:12px;border-radius:12px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06)}
+.resource-title{font-size:0.7rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;font-family:'Cinzel',serif}
+.resource-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.res-item{padding:8px;border-radius:9px;text-align:center;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06)}
+.res-item .res-num{font-size:1.4rem;font-weight:300;line-height:1}
+.res-item .res-lbl{font-size:0.65rem;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;margin-top:3px}
+.res-item.babies .res-num{color:var(--azure2)}.res-item.food .res-num{color:#ffd95c}
+.res-item.banked-b .res-num{color:rgba(74,158,255,0.55)}.res-item.banked-f .res-num{color:rgba(255,217,92,0.55)}
+.btn{width:100%;padding:10px 14px;border-radius:11px;border:none;cursor:pointer;font-family:'Cinzel',serif;font-size:0.78rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;transition:all 0.18s;margin-top:6px}
+.btn-primary{background:linear-gradient(180deg,rgba(200,168,75,0.22),rgba(200,168,75,0.08));color:var(--gold2);border:1px solid var(--border-bright)}
+.btn-primary:hover{background:linear-gradient(180deg,rgba(200,168,75,0.35),rgba(200,168,75,0.15));box-shadow:0 0 24px rgba(200,168,75,0.2)}
+.btn-ghost{background:rgba(255,255,255,0.03);color:var(--muted);border:1px solid rgba(255,255,255,0.08)}
+.btn-ghost:hover{background:rgba(255,255,255,0.07);color:var(--text)}
+.btn-azure{background:linear-gradient(180deg,rgba(74,158,255,0.2),rgba(74,158,255,0.06));color:var(--azure2);border:1px solid rgba(74,158,255,0.3)}
+.btn-azure:hover{background:linear-gradient(180deg,rgba(74,158,255,0.32),rgba(74,158,255,0.12))}
+.btn-crimson{background:linear-gradient(180deg,rgba(232,64,64,0.2),rgba(232,64,64,0.06));color:var(--crimson2);border:1px solid rgba(232,64,64,0.3)}
+.btn:disabled{opacity:0.35;cursor:not-allowed;pointer-events:none}
+.btn-row{display:flex;gap:6px}.btn-row .btn{margin-top:0}
+.mode-selector{margin-top:10px}
+.mode-title{font-size:0.68rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;font-family:'Cinzel',serif}
+.mode-btns{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.mode-btn{padding:7px 6px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.02);color:var(--muted);cursor:pointer;font-size:0.72rem;text-align:center;transition:all 0.15s;font-family:'Crimson Pro',serif}
+.mode-btn.active{border-color:var(--azure-dim);background:rgba(74,158,255,0.08);color:var(--azure2)}
+.mode-btn:hover:not(.active){background:rgba(255,255,255,0.05);color:var(--text)}
+.round-track{display:flex;gap:8px;justify-content:center;margin:12px 0}
+.round-pip{width:32px;height:32px;border-radius:50%;border:2px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:0.7rem;color:var(--muted);transition:all 0.3s}
+.round-pip.win-azure{border-color:var(--azure);background:rgba(74,158,255,0.2);color:var(--azure2)}
+.round-pip.win-crimson{border-color:var(--crimson);background:rgba(232,64,64,0.2);color:var(--crimson2)}
+.round-pip.current{border-color:var(--gold);color:var(--gold2);animation:pip-pulse 1.5s ease-in-out infinite}
+@keyframes pip-pulse{0%,100%{box-shadow:0 0 0 0 rgba(200,168,75,0.3)}50%{box-shadow:0 0 0 6px rgba(200,168,75,0)}}
+.center-hud{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:10;padding:10px 20px;border-radius:14px;background:rgba(4,8,15,0.88);border:1px solid var(--border);text-align:center;backdrop-filter:blur(12px);min-width:240px}
+.center-hud .phase-name{font-family:'Cinzel',serif;font-size:0.9rem;color:var(--gold2);letter-spacing:0.1em}
+.center-hud .phase-sub{font-size:0.78rem;color:var(--muted);margin-top:3px;font-style:italic}
+#toast{position:fixed;top:80px;left:50%;transform:translateX(-50%);z-index:20;padding:10px 18px;border-radius:12px;background:rgba(4,8,15,0.95);border:1px solid var(--border);color:var(--gold2);font-size:0.85rem;font-style:italic;box-shadow:0 16px 48px rgba(0,0,0,0.5);opacity:0;pointer-events:none;transition:opacity 0.2s;max-width:420px;text-align:center}
+#toast.show{opacity:1}
+.overlay{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;background:rgba(1,3,8,0.75);backdrop-filter:blur(8px)}
+.modal{width:min(700px,94vw);padding:32px;border-radius:20px;background:linear-gradient(160deg,rgba(10,18,32,0.98),rgba(4,8,16,0.98));border:1px solid var(--border-bright);box-shadow:0 48px 120px rgba(0,0,0,0.7),inset 0 1px 0 rgba(255,255,255,0.05)}
+.modal-title{font-family:'Cinzel',serif;font-size:1.5rem;font-weight:900;color:var(--gold2);margin-bottom:8px;letter-spacing:0.05em}
+.modal-sub{font-size:0.95rem;color:var(--muted);line-height:1.6;margin-bottom:16px;font-style:italic}
+.modal-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+.modal-actions .btn{width:auto;padding:12px 24px}
+.divider{height:1px;background:var(--border);margin:12px 0}
+.help-text{font-size:0.78rem;color:var(--muted);line-height:1.6;font-style:italic;margin-top:10px;padding:10px;border-radius:9px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05)}
+.place-toggle{display:flex;gap:5px;margin-top:8px}
+.place-btn{flex:1;padding:8px 4px;border-radius:9px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.02);color:var(--muted);cursor:pointer;font-size:0.75rem;text-align:center;transition:all 0.15s;font-family:'Cinzel',serif;letter-spacing:0.06em}
+.place-btn.active-babies{border-color:rgba(74,158,255,0.4);background:rgba(74,158,255,0.1);color:var(--azure2)}
+.place-btn.active-food{border-color:rgba(255,217,92,0.4);background:rgba(255,217,92,0.08);color:#ffd95c}
+.place-btn:hover:not(.active-babies):not(.active-food){background:rgba(255,255,255,0.06);color:var(--text)}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(200,168,75,0.2);border-radius:2px}
+
+/* ── LOBBY ── */
+.lobby-screen{width:100%;max-width:640px}
+.name-input{width:100%;padding:12px 16px;border-radius:11px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.12);color:var(--text);font-family:'Crimson Pro',serif;font-size:1rem;margin-bottom:12px;outline:none}
+.name-input:focus{border-color:var(--border-bright)}
+.lobby-list{margin-top:16px;display:flex;flex-direction:column;gap:8px;max-height:280px;overflow-y:auto}
+.lobby-row{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-radius:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07)}
+.lobby-row .lobby-name{font-family:'Cinzel',serif;font-size:0.85rem;color:var(--text)}
+.lobby-row .lobby-status{font-size:0.72rem;color:var(--muted);font-style:italic}
+.lobby-row .btn{width:auto;padding:7px 16px;margin-top:0;font-size:0.72rem}
+.lobby-empty{text-align:center;padding:24px;color:var(--muted);font-style:italic;font-size:0.85rem}
+.conn-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+.conn-dot.green{background:var(--green);box-shadow:0 0 6px var(--green)}
+.conn-dot.yellow{background:#ffd95c;box-shadow:0 0 6px #ffd95c}
+.conn-dot.red{background:var(--crimson);box-shadow:0 0 6px var(--crimson)}
+.waiting-banner{text-align:center;padding:16px;border-radius:12px;background:rgba(200,168,75,0.06);border:1px solid rgba(200,168,75,0.15);margin-top:12px}
+.waiting-banner .wt{font-family:'Cinzel',serif;font-size:0.9rem;color:var(--gold2);letter-spacing:0.1em}
+.waiting-banner .ws{font-size:0.78rem;color:var(--muted);margin-top:5px;font-style:italic}
+.winner-text{font-family:'Cinzel',serif;font-size:2rem;font-weight:900;text-align:center;margin:16px 0;text-shadow:0 0 40px currentColor}
+.winner-text.azure{color:var(--azure2)}.winner-text.crimson{color:var(--crimson2)}.winner-text.gold{color:var(--gold2)}
+
+/* opponent-turn dim */
+.dim-overlay{position:fixed;inset:0;z-index:8;background:rgba(1,3,8,0.45);pointer-events:none;opacity:0;transition:opacity 0.4s}
+.dim-overlay.active{opacity:1;pointer-events:all}
+.opponent-turn-label{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9;font-family:'Cinzel',serif;font-size:1.2rem;color:var(--crimson2);letter-spacing:0.15em;opacity:0;transition:opacity 0.4s;pointer-events:none;text-shadow:0 0 30px var(--crimson)}
+.opponent-turn-label.active{opacity:1}
+</style>
+</head>
+<body>
+<canvas id="sim"></canvas>
+<div id="toast"></div>
+<div class="dim-overlay" id="dimOverlay"></div>
+<div class="opponent-turn-label" id="opponentLabel">CRIMSON IS DEPLOYING...</div>
+
+<!-- CENTER HUD -->
+<div class="center-hud" id="centerHud" style="display:none">
+  <div class="phase-name" id="phaseName">Primordial Domination</div>
+  <div class="phase-sub" id="phaseSub">v3 · Multiplayer</div>
+</div>
+
+<!-- LEFT PANEL -->
+<div class="panel panel-left" id="leftPanel" style="display:none">
+  <div class="panel-title" id="leftPanelTitle">Your Command</div>
+  <div class="faction-header">
+    <div class="faction-icon azure">⚔</div>
+    <div>
+      <div class="faction-name azure" id="myFactionName">Azure Vanguard</div>
+      <div style="font-size:0.75rem;color:var(--muted);font-style:italic" id="myNameTag">—</div>
+    </div>
+  </div>
+  <div class="stat-row"><span class="stat-label">Alive</span><span class="stat-val azure" id="myAlive">0</span></div>
+  <div class="stat-row"><span class="stat-label">Nexus Mass</span><span class="stat-val azure" id="myMass">0</span></div>
+  <div class="stat-row"><span class="stat-label">Rounds Won</span><span class="stat-val gold" id="myScore">0</span></div>
+  <div class="divider"></div>
+  <div class="resource-block">
+    <div class="resource-title">Resources This Round</div>
+    <div class="resource-grid">
+      <div class="res-item babies"><div class="res-num" id="babiesAvail">0</div><div class="res-lbl">Babies</div></div>
+      <div class="res-item food"><div class="res-num" id="foodAvail">0</div><div class="res-lbl">Food</div></div>
+      <div class="res-item banked-b"><div class="res-num" id="babiesBanked">0</div><div class="res-lbl">Banked ⚑</div></div>
+      <div class="res-item banked-f"><div class="res-num" id="foodBanked">0</div><div class="res-lbl">Stocked ⚑</div></div>
+    </div>
+  </div>
+  <div class="place-toggle" id="placeToggle">
+    <button class="place-btn active-babies" id="placeBabiesBtn" onclick="setPlaceMode('babies')">⬡ Babies</button>
+    <button class="place-btn" id="placeFoodBtn" onclick="setPlaceMode('food')">◆ Food</button>
+  </div>
+  <div class="mode-selector">
+    <div class="mode-title">Drop Formation</div>
+    <div class="mode-btns">
+      <div class="mode-btn active" id="modeCluster" onclick="setFormation('cluster')">⬡ Cluster<br><small style="opacity:0.6;font-size:0.65rem">tight pack</small></div>
+      <div class="mode-btn" id="modeSpread" onclick="setFormation('spread')">⊹ Spread<br><small style="opacity:0.6;font-size:0.65rem">wide net</small></div>
+      <div class="mode-btn" id="modeFlank" onclick="setFormation('flank')">⇌ Flank<br><small style="opacity:0.6;font-size:0.65rem">two groups</small></div>
+      <div class="mode-btn" id="modeSingle" onclick="setFormation('single')">· Single<br><small style="opacity:0.6;font-size:0.65rem">one by one</small></div>
+    </div>
+  </div>
+  <div class="divider"></div>
+  <div class="btn-row">
+    <button class="btn btn-ghost" id="bankBtn" onclick="bankRemaining()">Bank Remaining</button>
+  </div>
+  <button class="btn btn-azure" id="endTurnBtn" onclick="endMyTurn()" disabled>End My Turn →</button>
+  <div class="help-text">Click the field to drop formations. Bank resources to save for later. Withhold food to field hungry hunters.</div>
+</div>
+
+<!-- RIGHT PANEL -->
+<div class="panel panel-right" id="rightPanel" style="display:none">
+  <div class="panel-title">The Battlefield</div>
+  <div class="round-track" id="roundTrack"></div>
+  <div class="divider"></div>
+  <div class="faction-header">
+    <div class="faction-icon crimson">☠</div>
+    <div>
+      <div class="faction-name crimson" id="oppFactionName">Crimson Host</div>
+      <div style="font-size:0.75rem;color:var(--muted);font-style:italic" id="oppNameTag">Awaiting opponent</div>
+    </div>
+  </div>
+  <div class="stat-row"><span class="stat-label">Alive</span><span class="stat-val crimson" id="oppAlive">0</span></div>
+  <div class="stat-row"><span class="stat-label">Nexus Mass</span><span class="stat-val crimson" id="oppMass">0</span></div>
+  <div class="stat-row"><span class="stat-label">Rounds Won</span><span class="stat-val gold" id="oppScore">0</span></div>
+  <div class="divider"></div>
+  <div class="resource-block">
+    <div class="resource-title">Territory — The Nexus</div>
+    <div class="stat-row"><span class="stat-label">Current Lord</span><span class="stat-val gold" id="nexusOwnerLabel">Contested</span></div>
+    <div class="stat-row"><span class="stat-label">Azure Mass</span><span class="stat-val azure" id="tAzureMass">0</span></div>
+    <div class="stat-row"><span class="stat-label">Crimson Mass</span><span class="stat-val crimson" id="tCrimsonMass">0</span></div>
+  </div>
+  <div class="divider"></div>
+  <div class="resource-block">
+    <div class="resource-title">Last Round</div>
+    <div class="stat-val" id="lastRoundText" style="font-size:0.78rem;color:var(--muted);font-style:italic;line-height:1.6">Awaiting first round.</div>
+  </div>
+  <div class="divider"></div>
+  <div class="stat-row">
+    <span class="stat-label"><span class="conn-dot" id="connDot"></span>Connection</span>
+    <span class="stat-val" id="connLabel" style="font-size:0.75rem">—</span>
+  </div>
+</div>
+
+<!-- LOBBY OVERLAY -->
+<div class="overlay" id="lobbyOverlay">
+  <div class="modal lobby-screen">
+    <div class="modal-title">Primordial Domination</div>
+    <div style="font-family:'Cinzel',serif;font-size:0.72rem;letter-spacing:0.2em;color:var(--muted);margin-bottom:20px">VERSION III · ELIMINATE ALL ENEMY ORGANISMS TO WIN</div>
+
+    <div id="lobbyConnect">
+      <div class="modal-sub">Enter your name and choose your battle mode.</div>
+      <input class="name-input" id="playerNameInput" placeholder="Your commander name..." maxlength="24"/>
+
+      <!-- MODE SELECT -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+        <div id="modeCardAI" onclick="selectLobbyMode('ai')" style="padding:14px;border-radius:12px;border:1px solid rgba(200,168,75,0.4);background:rgba(200,168,75,0.08);cursor:pointer;text-align:center;transition:all 0.18s">
+          <div style="font-family:'Cinzel',serif;font-size:0.85rem;color:var(--gold2);margin-bottom:4px">⚔ vs AI</div>
+          <div style="font-size:0.72rem;color:var(--muted);font-style:italic">Solo · Randomized opponent</div>
+        </div>
+        <div id="modeCardMP" onclick="selectLobbyMode('mp')" style="padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.02);cursor:pointer;text-align:center;transition:all 0.18s">
+          <div style="font-family:'Cinzel',serif;font-size:0.85rem;color:var(--muted);margin-bottom:4px">⚡ Multiplayer</div>
+          <div style="font-size:0.72rem;color:var(--muted);font-style:italic">Online · Live lobby</div>
+        </div>
+      </div>
+
+      <!-- AI MODE PANEL -->
+      <div id="aiModePanel">
+        <button class="btn btn-primary" onclick="startSoloMatch()" style="margin-top:0">⚔ Deploy vs AI</button>
+        <div style="margin-top:10px;padding:10px 12px;border-radius:10px;background:rgba(232,64,64,0.06);border:1px solid rgba(232,64,64,0.15)">
+          <div style="font-family:'Cinzel',serif;font-size:0.7rem;letter-spacing:0.12em;color:var(--crimson2);margin-bottom:4px">OPPONENT</div>
+          <div style="font-size:0.8rem;color:var(--muted);font-style:italic">Randomized each match — Rusher, Banker, Starver, or Mimic. You won't know until they act.</div>
+        </div>
+      </div>
+
+      <!-- MULTIPLAYER PANEL -->
+      <div id="mpModePanel" style="display:none">
+        <div class="btn-row" style="margin-top:0">
+          <button class="btn btn-primary" id="createMatchBtn" onclick="createMatch()" style="margin-top:0">⚔ Create Match</button>
+          <button class="btn btn-ghost" id="refreshBtn" onclick="refreshLobby()" style="margin-top:0">↺ Refresh</button>
+        </div>
+        <div style="margin-top:16px;font-family:'Cinzel',serif;font-size:0.7rem;letter-spacing:0.15em;color:var(--muted)">OPEN MATCHES</div>
+        <div class="lobby-list" id="lobbyList">
+          <div class="lobby-empty">Connecting to the battlefield...</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="lobbyWaiting" style="display:none">
+      <div class="waiting-banner">
+        <div class="wt" id="waitingTitle">⚔ Match Created</div>
+        <div class="ws" id="waitingDesc">Waiting for an opponent to join...</div>
+      </div>
+      <div style="margin-top:14px;text-align:center">
+        <div style="font-size:0.78rem;color:var(--muted);font-style:italic">Share this page URL with your opponent</div>
+        <div style="margin-top:8px;padding:8px 14px;border-radius:9px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);font-size:0.78rem;color:var(--gold2);word-break:break-all" id="shareUrl"></div>
+      </div>
+      <button class="btn btn-ghost" onclick="cancelMatch()" style="margin-top:12px">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- WIN OVERLAY -->
+<div class="overlay" id="winOverlay" style="display:none">
+  <div class="modal" style="text-align:center">
+    <div class="modal-title" id="winTitle">Match Complete</div>
+    <div class="winner-text" id="winnerText"></div>
+    <div class="modal-sub" id="winReason"></div>
+    <div style="margin:16px 0;display:flex;justify-content:center;gap:48px">
+      <div><div style="font-size:1.8rem;font-family:'Cinzel',serif;color:var(--azure2)" id="winAzureScore">0</div><div style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em">Azure</div></div>
+      <div><div style="font-size:1.8rem;font-family:'Cinzel',serif;color:var(--crimson2)" id="winCrimsonScore">0</div><div style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em">Crimson</div></div>
+    </div>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn btn-primary" onclick="returnToLobby()">Return to Lobby</button>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getDatabase, ref, set, get, onValue, off, push, remove, update, serverTimestamp }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+
+// ── FIREBASE CONFIG ──────────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyBGyN_Ssj-DQdUntpZIdes_-7XoQXvxG7I",
+  authDomain: "primordial-domination.firebaseapp.com",
+  databaseURL: "https://primordial-domination-default-rtdb.firebaseio.com",
+  projectId: "primordial-domination",
+  storageBucket: "primordial-domination.firebasestorage.app",
+  messagingSenderId: "713165723314",
+  appId: "1:713165723314:web:6b505b292526e0f6619bab"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// ── CANVAS ───────────────────────────────────────────────────
+const canvas = document.getElementById('sim');
+const ctx = canvas.getContext('2d');
+let W = innerWidth, H = innerHeight;
+
+function resize() {
+  canvas.width = innerWidth * devicePixelRatio;
+  canvas.height = innerHeight * devicePixelRatio;
+  canvas.style.width = innerWidth + 'px';
+  canvas.style.height = innerHeight + 'px';
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.scale(devicePixelRatio, devicePixelRatio);
+  W = innerWidth; H = innerHeight;
+  buildSpatial();
+  if(nexus) { nexus.x = W*0.5; nexus.y = H*0.5; nexus.radius = Math.min(W,H)*0.11; }
+}
+window.addEventListener('resize', resize);
+
+// ── CONSTANTS ────────────────────────────────────────────────
+const MAX_ORG=10000, MAX_FOOD=5000, CELL=52, GMAX=64, FGMAX=36;
+const SIM_SECONDS=30, SIM_SPEED=1.4, START_SIZE=3.2, MAX_SIZE=20, EAT_RATIO=1.65;
+const BASE_BABIES=8, BASE_FOOD=10, TERRITORY_BABY_BONUS=3, TERRITORY_FOOD_BONUS=5;
+const ROUNDS_TO_WIN=4, TOTAL_ROUNDS=999, SPECIES_PER_TEAM=4;
+
+// ── TYPED ARRAYS ─────────────────────────────────────────────
+const ox=new Float32Array(MAX_ORG),oy=new Float32Array(MAX_ORG);
+const ovx=new Float32Array(MAX_ORG),ovy=new Float32Array(MAX_ORG);
+const osize=new Float32Array(MAX_ORG),oenergy=new Float32Array(MAX_ORG);
+const oalive=new Uint8Array(MAX_ORG),oteam=new Uint8Array(MAX_ORG);
+const ospecies=new Uint8Array(MAX_ORG),okills=new Uint16Array(MAX_ORG);
+const oage=new Float32Array(MAX_ORG);
+const gSpeed=new Float32Array(MAX_ORG),gAggro=new Float32Array(MAX_ORG);
+const gEfficiency=new Float32Array(MAX_ORG),gPerception=new Float32Array(MAX_ORG);
+let orgCount=0;
+const fx=new Float32Array(MAX_FOOD),fy=new Float32Array(MAX_FOOD);
+const falive=new Uint8Array(MAX_FOOD),fglow=new Float32Array(MAX_FOOD);
+let foodCount=0;
+
+let gridW=1,gridH=1,gridCounts,gridEntries,fGridCounts,fGridEntries;
+function buildSpatial() {
+  gridW=Math.ceil(W/CELL)+1; gridH=Math.ceil(H/CELL)+1;
+  gridCounts=new Uint16Array(gridW*gridH); gridEntries=new Int32Array(gridW*gridH*GMAX);
+  fGridCounts=new Uint16Array(gridW*gridH); fGridEntries=new Int32Array(gridW*gridH*FGMAX);
+}
+
+// ── NEXUS ────────────────────────────────────────────────────
+const nexus={x:0,y:0,radius:90,owner:0,pressure:0,foodClock:0,FOOD_INTERVAL:4,FOOD_CAP:20};
+
+// ── GAME STATE ───────────────────────────────────────────────
+const game={
+  running:false, paused:false, phase:'lobby',
+  round:0, simClock:0,
+  myScore:0, oppScore:0,
+  myBabies:0, myFood:0, myBankedBabies:0, myBankedFood:0,
+  roundWinners:[], lastRoundSummary:'',
+  matchSeed:0,
+  soloMode:false,
+  aiPersonality:null,
+  aiPlaceDelay:0,
+  aiPlaceQueue:[],
+  aiPlaceIndex:0,
+  aiBankedBabies:0,
+  aiBankedFood:0
+};
+
+// ── AI PERSONALITIES ─────────────────────────────────────────
+const AI_PERSONALITIES={
+  rusher:{name:'THE RUSHER',desc:'Spends everything immediately. Floods the Nexus with maximum force. Predictable but overwhelming.',bankRatio:0.0,foodRatio:0.7,targetNexus:true,nexusChance:0.95},
+  banker:{name:'THE BANKER',desc:'Hoards resources for rounds 3 and 4. Saves up then unleashes a catastrophic flood — always aimed at the Nexus.',bankRatio:0.6,foodRatio:0.5,targetNexus:true,nexusChance:0.8},
+  starver:{name:'THE STARVER',desc:'Never drops food. Fields hollow hungry warriors that hunt your organisms directly. Lethal.',bankRatio:0.2,foodRatio:0.0,targetNexus:true,nexusChance:0.9},
+  mimic:{name:'THE MIMIC',desc:'Studies your placement ratio and mirrors it — then tries to out-execute your own strategy against you.',bankRatio:0.3,foodRatio:0.5,targetNexus:true,nexusChance:0.85}
+};
+
+// ── MULTIPLAYER STATE ────────────────────────────────────────
+const mp={
+  myId: 'p_'+(Math.random()*1e9|0).toString(36),
+  myName:'',
+  myRole:null,      // 'host' | 'guest'
+  myTeam:0,         // 1=azure, 2=crimson
+  matchKey:null,
+  opponentName:'',
+  connected:false,
+  placementMoves:[],  // moves queued to send
+  opponentMoves:[],   // received opponent moves
+  myTurnDone:false,
+  oppTurnDone:false,
+  matchRef:null,
+  placementListener:null,
+};
+
+// ── HELPERS ──────────────────────────────────────────────────
+let rngSeed=1;
+function rand(){rngSeed=(rngSeed*1664525+1013904223)>>>0;return rngSeed/4294967296;}
+function setSeed(s){rngSeed=(s>>>0)||1;}
+function clamp(v,a,b){return v<a?a:v>b?b:v;}
+function speciesHue(team,sp){const b=[205,220,190,175],r=[0,15,345,330];return(team===1?b:r)[sp%SPECIES_PER_TEAM];}
+function hsl(h,s,l,a=1){return `hsla(${h},${s}%,${l}%,${a})`;}
+
+let particles=[],trails=[];
+
+// ── WORLD ────────────────────────────────────────────────────
+function resetWorld(){
+  orgCount=0;foodCount=0;particles.length=0;trails.length=0;
+  oalive.fill(0);falive.fill(0);okills.fill(0);
+}
+
+function spawnDeathFX(x,y,team,size){
+  const n=3+Math.min(10,(size*0.8)|0);
+  for(let i=0;i<n;i++) particles.push({x,y,vx:(rand()-0.5)*3.2,vy:(rand()-0.5)*3.2,life:0.5+rand()*0.6,size:1+rand()*2.2,color:team===1?'74,158,255':'232,64,64'});
+}
+function spawnCaptureFX(x,y,team){
+  for(let i=0;i<24;i++) particles.push({x,y,vx:Math.cos(i/24*Math.PI*2)*(1.6+rand()*2.8),vy:Math.sin(i/24*Math.PI*2)*(1.6+rand()*2.8),life:0.8+rand()*0.5,size:2+rand()*2.5,color:team===1?'74,158,255':team===2?'232,64,64':'200,168,75'});
+}
+
+function addFood(x,y){
+  let idx=-1;
+  for(let i=0;i<foodCount;i++) if(!falive[i]){idx=i;break;}
+  if(idx<0&&foodCount<MAX_FOOD) idx=foodCount++;
+  if(idx<0) return false;
+  fx[idx]=clamp(x,0,W);fy[idx]=clamp(y,0,H);falive[idx]=1;fglow[idx]=rand()*Math.PI*2;
+  return true;
+}
+
+function addOrganism(x,y,team,parent=-1){
+  let idx=-1;
+  for(let i=0;i<orgCount;i++) if(!oalive[i]){idx=i;break;}
+  if(idx<0&&orgCount<MAX_ORG) idx=orgCount++;
+  if(idx<0) return false;
+  ox[idx]=clamp(x,0,W);oy[idx]=clamp(y,0,H);
+  ovx[idx]=(rand()-0.5)*2.5;ovy[idx]=(rand()-0.5)*2.5;
+  oteam[idx]=team;ospecies[idx]=parent>=0?ospecies[parent]:(rand()*SPECIES_PER_TEAM)|0;
+  osize[idx]=START_SIZE;oenergy[idx]=START_SIZE*2.4;oage[idx]=0;oalive[idx]=1;okills[idx]=0;
+  if(parent>=0){
+    gSpeed[idx]=gSpeed[parent];gAggro[idx]=gAggro[parent];
+    gEfficiency[idx]=gEfficiency[parent];gPerception[idx]=gPerception[parent];
+    const mr=0.15,ms=0.16;
+    if(rand()<mr) gSpeed[idx]=clamp(gSpeed[idx]+(rand()-0.5)*ms,0.05,1);
+    if(rand()<mr) gAggro[idx]=clamp(gAggro[idx]+(rand()-0.5)*ms,0.05,1);
+    if(rand()<mr) gEfficiency[idx]=clamp(gEfficiency[idx]+(rand()-0.5)*ms,0.05,1);
+    if(rand()<mr) gPerception[idx]=clamp(gPerception[idx]+(rand()-0.5)*ms,0.05,1);
+  } else {
+    gSpeed[idx]=0.38+rand()*0.36;gAggro[idx]=0.5+rand()*0.36;
+    gEfficiency[idx]=0.34+rand()*0.36;gPerception[idx]=0.45+rand()*0.36;
+  }
+  return true;
+}
+
+// ── FORMATIONS ───────────────────────────────────────────────
+function dropFormation(cx,cy,team,count,mode){
+  if(mode==='single'){addOrganism(cx+(rand()-0.5)*12,cy+(rand()-0.5)*12,team);return 1;}
+  if(mode==='cluster'){for(let i=0;i<count;i++) addOrganism(cx+(rand()-0.5)*30,cy+(rand()-0.5)*30,team);return count;}
+  if(mode==='spread'){for(let i=0;i<count;i++){const a=(i/count)*Math.PI*2,r=55+rand()*40;addOrganism(cx+Math.cos(a)*r,cy+Math.sin(a)*r,team);}return count;}
+  if(mode==='flank'){
+    const half=Math.ceil(count/2),perp=Math.atan2(nexus.y-cy,nexus.x-cx)+Math.PI/2;
+    for(let i=0;i<half;i++) addOrganism(cx+Math.cos(perp)*60+(rand()-0.5)*22,cy+Math.sin(perp)*60+(rand()-0.5)*22,team);
+    for(let i=half;i<count;i++) addOrganism(cx-Math.cos(perp)*60+(rand()-0.5)*22,cy-Math.sin(perp)*60+(rand()-0.5)*22,team);
+    return count;
+  }
+  return 0;
+}
+function dropFoodFormation(cx,cy,count,mode){
+  if(mode==='single'){addFood(cx+(rand()-0.5)*10,cy+(rand()-0.5)*10);return 1;}
+  if(mode==='cluster'){for(let i=0;i<count;i++) addFood(cx+(rand()-0.5)*32,cy+(rand()-0.5)*32);return count;}
+  if(mode==='spread'){for(let i=0;i<count;i++){const a=(i/count)*Math.PI*2,r=50+rand()*35;addFood(cx+Math.cos(a)*r,cy+Math.sin(a)*r);}return count;}
+  if(mode==='flank'){
+    const half=Math.ceil(count/2),perp=Math.atan2(nexus.y-cy,nexus.x-cx)+Math.PI/2;
+    for(let i=0;i<half;i++) addFood(cx+Math.cos(perp)*55+(rand()-0.5)*20,cy+Math.sin(perp)*55+(rand()-0.5)*20);
+    for(let i=half;i<count;i++) addFood(cx-Math.cos(perp)*55+(rand()-0.5)*20,cy-Math.sin(perp)*55+(rand()-0.5)*20);
+    return count;
+  }
+  return 0;
+}
+
+// ── SPATIAL GRIDS ────────────────────────────────────────────
+function buildGrid(){
+  gridCounts.fill(0);
+  for(let i=0;i<orgCount;i++) if(oalive[i]){
+    const cx=Math.min(gridW-1,Math.max(0,(ox[i]/CELL)|0)),cy=Math.min(gridH-1,Math.max(0,(oy[i]/CELL)|0));
+    const ci=cy*gridW+cx,k=gridCounts[ci];if(k<GMAX){gridEntries[ci*GMAX+k]=i;gridCounts[ci]=k+1;}
+  }
+}
+function buildFoodGrid(){
+  fGridCounts.fill(0);
+  for(let i=0;i<foodCount;i++) if(falive[i]){
+    const cx=Math.min(gridW-1,Math.max(0,(fx[i]/CELL)|0)),cy=Math.min(gridH-1,Math.max(0,(fy[i]/CELL)|0));
+    const ci=cy*gridW+cx,k=fGridCounts[ci];if(k<FGMAX){fGridEntries[ci*FGMAX+k]=i;fGridCounts[ci]=k+1;}
+  }
+}
+
+// ── SIMULATION ───────────────────────────────────────────────
+function canEat(a,b){if(!oalive[b]||a===b)return false;if(oteam[a]===oteam[b])return false;return osize[a]>osize[b]*EAT_RATIO;}
+function killOrganism(victim){if(!oalive[victim])return;oalive[victim]=0;spawnDeathFX(ox[victim],oy[victim],oteam[victim],osize[victim]);}
+function reproduce(i){
+  if(!oalive[i])return;oenergy[i]*=0.55;osize[i]=clamp(Math.sqrt(Math.max(0.5,oenergy[i]))*1.55,1,MAX_SIZE);
+  for(let n=0;n<4;n++) addOrganism(ox[i]+(rand()-0.5)*22,oy[i]+(rand()-0.5)*22,oteam[i],i);
+}
+function updateNexusGrowth(dt){
+  nexus.foodClock+=dt;if(nexus.foodClock<nexus.FOOD_INTERVAL)return;nexus.foodClock=0;
+  if(!nexus.owner)return;
+  let near=0;
+  for(let i=0;i<foodCount;i++) if(falive[i]){const dx=fx[i]-nexus.x,dy=fy[i]-nexus.y;if(dx*dx+dy*dy<nexus.radius*nexus.radius*1.4)near++;}
+  if(near>=nexus.FOOD_CAP)return;
+  for(let n=0;n<3;n++){const a=rand()*Math.PI*2,r=rand()*nexus.radius*0.75;addFood(nexus.x+Math.cos(a)*r,nexus.y+Math.sin(a)*r);}
+}
+
+function stepSimulation(dt){
+  dt*=SIM_SPEED;game.simClock+=dt;
+  buildGrid();buildFoodGrid();updateNexusGrowth(dt);
+  const repro=[];
+  for(let i=0;i<orgCount;i++){
+    if(!oalive[i])continue;
+    let ax=0,ay=0,swarm=0;
+    const myX=ox[i],myY=oy[i],mySize=osize[i],myTeam=oteam[i];
+    const myAgg=1+gAggro[i]*1.8,myPerc=Math.min(3,1+(gPerception[i]*2)|0);
+    const cx=Math.min(gridW-1,Math.max(0,(myX/CELL)|0)),cy_=Math.min(gridH-1,Math.max(0,(myY/CELL)|0));
+    for(let yy=-myPerc;yy<=myPerc;yy++){
+      const ny=cy_+yy;if(ny<0||ny>=gridH)continue;
+      for(let xx=-myPerc;xx<=myPerc;xx++){
+        const nx=cx+xx;if(nx<0||nx>=gridW)continue;
+        const ci=ny*gridW+nx,cnt=gridCounts[ci],base=ci*GMAX;
+        for(let k=0;k<cnt;k++){
+          const j=gridEntries[base+k];if(j===i||!oalive[j])continue;
+          const dx=ox[j]-myX,dy=oy[j]-myY,d2=dx*dx+dy*dy;if(d2<0.001)continue;
+          const d=Math.sqrt(d2),nxv=dx/d,nyv=dy/d,enemy=oteam[j]!==myTeam;
+          const sepR=10+mySize*1.2;if(d<sepR){const f=(sepR-d)/sepR*0.022;ax-=nxv*f;ay-=nyv*f;}
+          if(!enemy){if(d<110){ax+=nxv*0.003;ay+=nyv*0.003;}continue;}
+          if(canEat(i,j)){
+            const f=myAgg*0.28/(d+4);ax+=nxv*f;ay+=nyv*f;
+            if(d<mySize+osize[j]+2.8){killOrganism(j);oenergy[i]+=osize[j]*1.4;okills[i]++;}
+          } else {
+            const flee=0.44/(d+6)*(1.2+gPerception[i]+(canEat(j,i)?0.9:0));ax-=nxv*flee;ay-=nyv*flee;
+            if(d<mySize+osize[j]+10) swarm+=Math.max(0.15,Math.min(0.92,osize[j]/Math.max(1.1,mySize)))*(0.6+gAggro[j]);
+          }
+        }
+      }
+    }
+    let bestFood=-1,bestDist=1e9;
+    for(let yy=-myPerc;yy<=myPerc;yy++){
+      const ny=cy_+yy;if(ny<0||ny>=gridH)continue;
+      for(let xx=-myPerc;xx<=myPerc;xx++){
+        const nx=cx+xx;if(nx<0||nx>=gridW)continue;
+        const ci=ny*gridW+nx,cnt=fGridCounts[ci],base=ci*FGMAX;
+        for(let k=0;k<cnt;k++){const j=fGridEntries[base+k];if(!falive[j])continue;const dx=fx[j]-myX,dy=fy[j]-myY,d2=dx*dx+dy*dy;if(d2<bestDist){bestDist=d2;bestFood=j;}}
+      }
+    }
+    if(bestFood>=0){
+      const dx=fx[bestFood]-myX,dy=fy[bestFood]-myY,d=Math.max(1,Math.sqrt(dx*dx+dy*dy));
+      const ff=0.26/d*(1.1+gPerception[i]*1.6);ax+=dx/d*ff;ay+=dy/d*ff;
+      if(d<mySize+4.5){falive[bestFood]=0;oenergy[i]+=3.2;}
+    }
+    {const dx=nexus.x-myX,dy=nexus.y-myY,d2=dx*dx+dy*dy;
+     if(d2<nexus.radius*nexus.radius*9){const d=Math.max(1,Math.sqrt(d2)),f=0.0042*(nexus.radius/d);ax+=dx/d*f;ay+=dy/d*f;}}
+    if(nexus.owner===myTeam){ax*=1.06;ay*=1.06;oenergy[i]+=0.012*dt;}
+    const speedLim=92*(0.98/(1+mySize*0.032))*(0.95+gSpeed[i]*1.5);
+    ovx[i]=(ovx[i]+ax*dt*820)*0.992;ovy[i]=(ovy[i]+ay*dt*820)*0.992;
+    const sp=Math.hypot(ovx[i],ovy[i]);if(sp>speedLim){ovx[i]=ovx[i]/sp*speedLim;ovy[i]=ovy[i]/sp*speedLim;}
+    trails.push({x:myX,y:myY,team:myTeam,alpha:0.12+gSpeed[i]*0.1,size:Math.max(0.7,mySize*0.4)});
+    ox[i]=clamp(ox[i]+ovx[i]*dt,2,W-2);oy[i]=clamp(oy[i]+ovy[i]*dt,2,H-2);
+    const meta=0.028*(1-gEfficiency[i]*0.32)+mySize*0.0010;
+    oenergy[i]-=meta*dt;
+    if(swarm>2.8){oenergy[i]-=(swarm-2.8)*0.72*dt;if(rand()<0.1*dt) spawnDeathFX(myX,myY,myTeam,Math.max(1.1,mySize*0.4));}
+    oenergy[i]=Math.max(0.9,oenergy[i]);
+    osize[i]=clamp(Math.sqrt(Math.max(0.5,oenergy[i]))*1.55,1,MAX_SIZE);
+    oage[i]+=dt;
+    if(oenergy[i]<0.98&&swarm>3.2){killOrganism(i);continue;}
+    if(oenergy[i]>28&&osize[i]>14) repro.push(i);
+  }
+  for(const i of repro) if(oalive[i]) reproduce(i);
+  for(let i=trails.length-1;i>=0;i--){trails[i].alpha-=dt*0.38;if(trails[i].alpha<=0)trails.splice(i,1);}
+  for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt*1.2;p.x+=p.vx;p.y+=p.vy;p.vx*=0.986;p.vy*=0.986;if(p.life<=0)particles.splice(i,1);}
+  computeNexusControl();
+  if(game.simClock>=SIM_SECONDS) finishRound();
+}
+
+function computeNexusControl(){
+  let am=0,cm=0;const nr2=nexus.radius*nexus.radius;
+  for(let i=0;i<orgCount;i++) if(oalive[i]){
+    const dx=ox[i]-nexus.x,dy=oy[i]-nexus.y;
+    if(dx*dx+dy*dy<=nr2){if(oteam[i]===1)am+=oenergy[i];else cm+=oenergy[i];}
+  }
+  const prev=nexus.owner;
+  if(am>cm*1.04&&am>0)nexus.owner=1;else if(cm>am*1.04&&cm>0)nexus.owner=2;else nexus.owner=0;
+  if(nexus.owner!==prev)spawnCaptureFX(nexus.x,nexus.y,nexus.owner);
+  nexus.pressure=Math.abs(am-cm)/Math.max(1,am+cm);
+  return{am,cm};
+}
+
+function computeAllControl(){
+  let ba=0,ra=0,bm=0,rm=0,an=0,cn=0;const nr2=nexus.radius*nexus.radius;
+  for(let i=0;i<orgCount;i++) if(oalive[i]){
+    const m=oenergy[i];
+    if(oteam[i]===1){ba++;bm+=m;}else{ra++;rm+=m;}
+    const dx=ox[i]-nexus.x,dy=oy[i]-nexus.y;
+    if(dx*dx+dy*dy<=nr2){if(oteam[i]===1)an+=m;else cn+=m;}
+  }
+  return{blueAlive:ba,redAlive:ra,blueMass:bm,redMass:rm,azureNexus:an,crimsonNexus:cn};
+}
+
+// ── PLACEMENT MODES ──────────────────────────────────────────
+let placeMode='babies', formation='cluster';
+window.setPlaceMode=function(m){
+  placeMode=m;
+  document.getElementById('placeBabiesBtn').className='place-btn'+(m==='babies'?' active-babies':'');
+  document.getElementById('placeFoodBtn').className='place-btn'+(m==='food'?' active-food':'');
+};
+window.setFormation=function(f){
+  formation=f;
+  ['cluster','spread','flank','single'].forEach(id=>{
+    document.getElementById('mode'+id[0].toUpperCase()+id.slice(1)).className='mode-btn'+(f===id?' active':'');
+  });
+};
+
+// ── LOBBY MODE SELECT ────────────────────────────────────────
+let currentLobbyMode='ai';
+window.selectLobbyMode=function(mode){
+  currentLobbyMode=mode;
+  const aiCard=document.getElementById('modeCardAI');
+  const mpCard=document.getElementById('modeCardMP');
+  const aiPanel=document.getElementById('aiModePanel');
+  const mpPanel=document.getElementById('mpModePanel');
+  if(mode==='ai'){
+    aiCard.style.borderColor='rgba(200,168,75,0.4)';aiCard.style.background='rgba(200,168,75,0.08)';
+    aiCard.querySelector('div').style.color='var(--gold2)';
+    mpCard.style.borderColor='rgba(255,255,255,0.08)';mpCard.style.background='rgba(255,255,255,0.02)';
+    mpCard.querySelector('div').style.color='var(--muted)';
+    aiPanel.style.display='block';mpPanel.style.display='none';
+  } else {
+    mpCard.style.borderColor='rgba(74,158,255,0.4)';mpCard.style.background='rgba(74,158,255,0.08)';
+    mpCard.querySelector('div').style.color='var(--azure2)';
+    aiCard.style.borderColor='rgba(255,255,255,0.08)';aiCard.style.background='rgba(255,255,255,0.02)';
+    aiCard.querySelector('div').style.color='var(--muted)';
+    aiPanel.style.display='none';mpPanel.style.display='block';
+    refreshLobby();
+  }
+};
+
+// ── SOLO VS AI ───────────────────────────────────────────────
+window.startSoloMatch=function(){
+  const name=document.getElementById('playerNameInput').value.trim()||'Commander';
+  mp.myName=name; mp.myTeam=1; mp.myRole='host'; mp.opponentName='Crimson Host';
+  game.soloMode=true;
+  game.matchSeed=(Date.now()^(Math.random()*0xffffffff))>>>0;
+  // Pick random AI personality
+  const keys=Object.keys(AI_PERSONALITIES);
+  setSeed(game.matchSeed);
+  game.aiPersonality=AI_PERSONALITIES[keys[(rand()*keys.length)|0]];
+  game.aiBankedBabies=0; game.aiBankedFood=0;
+  document.getElementById('oppNameTag').textContent=game.aiPersonality.name;
+  document.getElementById('personalityCard') && (document.getElementById('personalityCard').style.display='block');
+  launchGame();
+  toast(`Solo match begun · You face ${game.aiPersonality.name}`);
+};
+
+function buildAIQueue(){
+  const p=game.aiPersonality;
+  const bonusBaby=nexus.owner===2?3:0, bonusFood=nexus.owner===2?5:0;
+  const aiBabies=BASE_BABIES+bonusBaby+game.aiBankedBabies;
+  const aiFood=BASE_FOOD+bonusFood+game.aiBankedFood;
+  const bankB=Math.floor(aiBabies*p.bankRatio), bankF=Math.floor(aiFood*p.bankRatio);
+  game.aiBankedBabies=bankB; game.aiBankedFood=bankF;
+  const spendB=aiBabies-bankB, spendF=aiFood-bankF;
+  game.aiPlaceQueue=[];
+  for(let i=0;i<spendB;i++){
+    let x,y;
+    if(rand()<(p.nexusChance||0.85)){
+      // Place within or just outside Nexus to contest it directly
+      const a=rand()*Math.PI*2, r=nexus.radius*(0.4+rand()*1.0);
+      x=nexus.x+Math.cos(a)*r; y=nexus.y+Math.sin(a)*r;
+    } else {
+      // Flanking position — approach from crimson side
+      x=W*0.6+rand()*W*0.3; y=rand()*H;
+    }
+    game.aiPlaceQueue.push({type:'baby',x:clamp(x,20,W-20),y:clamp(y,20,H-20)});
+  }
+  for(let i=0;i<spendF;i++){
+    if(rand()>p.foodRatio) continue;
+    let x,y;
+    // Food goes near Nexus to sustain the fight
+    if(rand()<0.75){
+      const a=rand()*Math.PI*2, r=nexus.radius*(0.5+rand()*0.9);
+      x=nexus.x+Math.cos(a)*r; y=nexus.y+Math.sin(a)*r;
+    } else {
+      x=W*0.55+rand()*W*0.35; y=rand()*H;
+    }
+    game.aiPlaceQueue.push({type:'food',x:clamp(x,20,W-20),y:clamp(y,20,H-20)});
+  }
+  game.aiPlaceIndex=0; game.aiPlaceDelay=0;
+}
+
+function tickAIPlacement(dt){
+  if(game.phase!=='ai-thinking') return;
+  game.aiPlaceDelay+=dt;
+  while(game.aiPlaceDelay>=0.07&&game.aiPlaceIndex<game.aiPlaceQueue.length){
+    game.aiPlaceDelay-=0.07;
+    const item=game.aiPlaceQueue[game.aiPlaceIndex++];
+    if(item.type==='baby') addOrganism(item.x+(rand()-0.5)*14,item.y+(rand()-0.5)*14,2);
+    else addFood(item.x+(rand()-0.5)*10,item.y+(rand()-0.5)*10);
+  }
+  if(game.aiPlaceIndex>=game.aiPlaceQueue.length){
+    game.phase='simulation'; game.simClock=0; nexus.foodClock=0;
+    setDim(false); updateUI();
+    toast(`Round ${game.round} — The ecosystem awakens`);
+  }
+}
+
+// ── FIREBASE LOBBY ───────────────────────────────────────────
+let lobbyRef=null;
+let lobbyUnsubscribe=null;
+
+window.refreshLobby=async function(){
+  renderLobbyList([]);
+  const snap=await get(ref(db,'lobby'));
+  const matches=[];
+  if(snap.exists()) snap.forEach(c=>{const v=c.val();if(v.status==='waiting')matches.push({key:c.key,...v});});
+  renderLobbyList(matches);
+};
+
+function renderLobbyList(matches){
+  const el=document.getElementById('lobbyList');
+  if(!matches.length){el.innerHTML='<div class="lobby-empty">No open matches. Create one and wait for an opponent.</div>';return;}
+  el.innerHTML=matches.map(m=>`
+    <div class="lobby-row">
+      <div><div class="lobby-name">⚔ ${m.hostName||'Unknown'}</div><div class="lobby-status">Awaiting challenger · Round ${m.round||1}</div></div>
+      <button class="btn btn-crimson" onclick="joinMatch('${m.key}','${m.hostName}')">Join</button>
+    </div>`).join('');
+}
+
+// Start live lobby listener
+function startLobbyListener(){
+  lobbyRef=ref(db,'lobby');
+  lobbyUnsubscribe=onValue(lobbyRef,snap=>{
+    const matches=[];
+    if(snap.exists()) snap.forEach(c=>{const v=c.val();if(v.status==='waiting')matches.push({key:c.key,...v});});
+    renderLobbyList(matches);
+  });
+  setConnStatus('green','Connected');
+}
+
+window.createMatch=async function(){
+  const name=document.getElementById('playerNameInput').value.trim();
+  if(!name){toast('Enter your commander name first');return;}
+  mp.myName=name; mp.myRole='host'; mp.myTeam=1;
+  const seed=(Date.now()^(Math.random()*0xffffffff))>>>0;
+  game.matchSeed=seed;
+  const matchData={
+    hostId:mp.myId, hostName:name,
+    status:'waiting', seed,
+    round:1, createdAt:Date.now()
+  };
+  const newRef=push(ref(db,'lobby'),matchData);
+  mp.matchKey=newRef.key;
+  mp.matchRef=ref(db,'lobby/'+mp.matchKey);
+  document.getElementById('lobbyConnect').style.display='none';
+  document.getElementById('lobbyWaiting').style.display='block';
+  document.getElementById('waitingTitle').textContent='⚔ Match Created — Waiting...';
+  document.getElementById('shareUrl').textContent=location.href;
+  // Watch for guest joining
+  onValue(mp.matchRef,snap=>{
+    const v=snap.val();
+    if(!v)return;
+    if(v.status==='active'&&v.guestId&&v.guestId!==mp.myId){
+      mp.opponentName=v.guestName||'Challenger';
+      startMatch();
+    }
+  });
+  toast('Match created — share this page or wait for someone from the lobby');
+};
+
+window.joinMatch=async function(key,hostName){
+  const name=document.getElementById('playerNameInput').value.trim();
+  if(!name){toast('Enter your commander name first');return;}
+  mp.myName=name; mp.myRole='guest'; mp.myTeam=2; mp.matchKey=key; mp.opponentName=hostName;
+  mp.matchRef=ref(db,'lobby/'+key);
+  const snap=await get(mp.matchRef);
+  if(!snap.exists()||snap.val().status!=='waiting'){toast('Match no longer available');refreshLobby();return;}
+  game.matchSeed=snap.val().seed;
+  await update(mp.matchRef,{status:'active',guestId:mp.myId,guestName:name});
+  startMatch();
+};
+
+window.cancelMatch=async function(){
+  if(mp.matchKey) await remove(ref(db,'lobby/'+mp.matchKey));
+  mp.matchKey=null; mp.matchRef=null;
+  document.getElementById('lobbyConnect').style.display='block';
+  document.getElementById('lobbyWaiting').style.display='none';
+};
+
+// ── MATCH START ──────────────────────────────────────────────
+function launchGame(){
+  if(lobbyUnsubscribe){off(ref(db,'lobby'));lobbyUnsubscribe=null;}
+  document.getElementById('lobbyOverlay').style.display='none';
+  document.getElementById('leftPanel').style.display='block';
+  document.getElementById('rightPanel').style.display='block';
+  document.getElementById('centerHud').style.display='block';
+
+  if(mp.myTeam===1){
+    document.getElementById('myFactionName').textContent='Azure Vanguard';
+    document.getElementById('myFactionName').className='faction-name azure';
+    document.getElementById('myNameTag').textContent=mp.myName;
+    document.getElementById('oppFactionName').textContent='Crimson Host';
+    document.getElementById('oppFactionName').className='faction-name crimson';
+    document.getElementById('oppNameTag').textContent=game.soloMode?(game.aiPersonality?game.aiPersonality.name:'Crimson Host'):mp.opponentName;
+    document.getElementById('opponentLabel').textContent='CRIMSON IS DEPLOYING...';
+  } else {
+    document.getElementById('myFactionName').textContent='Crimson Host';
+    document.getElementById('myFactionName').className='faction-name crimson';
+    document.getElementById('myNameTag').textContent=mp.myName;
+    document.getElementById('oppFactionName').textContent='Azure Vanguard';
+    document.getElementById('oppFactionName').className='faction-name azure';
+    document.getElementById('oppNameTag').textContent=mp.opponentName;
+    document.getElementById('opponentLabel').textContent='AZURE IS DEPLOYING...';
+  }
+
+  setSeed(game.matchSeed);
+  resetWorld();
+  nexus.x=W*0.5;nexus.y=H*0.5;nexus.radius=Math.min(W,H)*0.11;
+  nexus.owner=0;nexus.pressure=0;nexus.foodClock=0;
+
+  game.running=true;game.paused=false;game.phase='placement';
+  game.round=1;game.simClock=0;game.myScore=0;game.oppScore=0;
+  game.roundWinners=[];
+  mp.myBankedBabies=0;mp.myBankedFood=0;
+  mp.myTurnDone=false;mp.oppTurnDone=false;
+  mp.placementMoves=[];mp.opponentMoves=[];
+
+  if(!game.soloMode){
+    listenForOpponentMoves();
+  }
+  startMyTurn();
+}
+
+function startMatch(){
+  game.soloMode=false;
+  launchGame();
+  toast(`Match begun · You are ${mp.myTeam===1?'Azure Vanguard':'Crimson Host'} · ${mp.myName} vs ${mp.opponentName}`);
+}
+
+// ── PLACEMENT SYNC ───────────────────────────────────────────
+function listenForOpponentMoves(){
+  const path=`matches/${mp.matchKey}/round${game.round}/moves/${mp.myTeam===1?'crimson':'azure'}`;
+  const moveRef=ref(db,path);
+  if(mp.placementListener) off(moveRef);
+  onValue(moveRef,snap=>{
+    if(!snap.exists())return;
+    const moves=snap.val();
+    if(Array.isArray(moves)&&moves.length>0&&!mp.oppTurnDone){
+      mp.oppTurnDone=true;
+      applyOpponentMoves(moves);
+      checkBothReady();
+    }
+  });
+}
+
+function applyOpponentMoves(moves){
+  const team=mp.myTeam===1?2:1;
+  // Re-seed so opponent's organisms match their view
+  // We use a deterministic sub-seed per move
+  for(const m of moves){
+    setSeed(m.seed);
+    if(m.type==='baby') dropFormation(m.x,m.y,team,m.count,m.formation);
+    else dropFoodFormation(m.x,m.y,m.count,m.formation);
+  }
+  toast(`${mp.opponentName} has deployed — simulation incoming`);
+}
+
+async function sendMyMoves(){
+  const team=mp.myTeam===1?'azure':'crimson';
+  const path=`matches/${mp.matchKey}/round${game.round}/moves/${team}`;
+  await set(ref(db,path),mp.placementMoves);
+  mp.myTurnDone=true;
+  checkBothReady();
+}
+
+function checkBothReady(){
+  if(mp.myTurnDone&&mp.oppTurnDone){
+    // Both placed — start simulation after brief pause
+    setTimeout(()=>{
+      game.phase='simulation';
+      game.simClock=0;nexus.foodClock=0;
+      setDim(false);
+      updateUI();
+      toast(`Round ${game.round} — The ecosystem awakens`);
+    },800);
+  } else if(mp.myTurnDone&&!mp.oppTurnDone){
+    setDim(true);
+    document.getElementById('phaseName').textContent='Waiting for opponent...';
+    document.getElementById('phaseSub').textContent=`${mp.opponentName} is still deploying`;
+  }
+}
+
+function setDim(on){
+  document.getElementById('dimOverlay').className='dim-overlay'+(on?' active':'');
+  document.getElementById('opponentLabel').className='opponent-turn-label'+(on?' active':'');
+}
+
+// ── PLAYER TURN ──────────────────────────────────────────────
+function startMyTurn(){
+  game.phase='placement';
+  const bonusBaby=nexus.owner===mp.myTeam?TERRITORY_BABY_BONUS:0;
+  const bonusFood=nexus.owner===mp.myTeam?TERRITORY_FOOD_BONUS:0;
+  game.myBabies=BASE_BABIES+bonusBaby+(mp.myBankedBabies||0);
+  game.myFood=BASE_FOOD+bonusFood+(mp.myBankedFood||0);
+  mp.myBankedBabies=0;mp.myBankedFood=0;
+  mp.myTurnDone=false;mp.oppTurnDone=false;
+  mp.placementMoves=[];
+  setPlaceMode('babies');
+  setDim(false);
+  if(!game.soloMode) listenForOpponentMoves();
+  updateUI();
+  toast(`Round ${game.round} — Deploy your forces, ${mp.myName}`);
+}
+
+window.bankRemaining=function(){
+  mp.myBankedBabies=(mp.myBankedBabies||0)+game.myBabies;
+  mp.myBankedFood=(mp.myBankedFood||0)+game.myFood;
+  game.myBabies=0;game.myFood=0;
+  updateUI();
+  toast(`Banked for next round — ${mp.myBankedBabies} babies & ${mp.myBankedFood} food`);
+};
+
+window.endMyTurn=async function(){
+  if(game.phase!=='placement')return;
+  if(game.soloMode){
+    // Solo: trigger AI placement immediately
+    game.phase='ai-thinking';
+    setDim(true);
+    document.getElementById('phaseName').textContent='Crimson Host Deploys...';
+    document.getElementById('phaseSub').textContent=game.aiPersonality?game.aiPersonality.name+' is placing forces...':'';
+    buildAIQueue();
+    updateUI();
+  } else {
+    await sendMyMoves();
+    updateUI();
+  }
+};
+
+// ── CANVAS CLICK ─────────────────────────────────────────────
+canvas.addEventListener('click',ev=>{
+  if(game.phase!=='placement'||mp.myTurnDone)return;
+  const rect=canvas.getBoundingClientRect();
+  const x=ev.clientX-rect.left,y=ev.clientY-rect.top;
+  const moveSeed=(Math.random()*0xffffffff)|0;
+  setSeed(moveSeed);
+  if(placeMode==='babies'&&game.myBabies>0){
+    const count=formation==='single'?1:game.myBabies;
+    const dropped=dropFormation(x,y,mp.myTeam,count,formation);
+    game.myBabies-=dropped;
+    mp.placementMoves.push({type:'baby',x,y,count,formation,seed:moveSeed});
+    if(game.myBabies===0&&game.myFood>0){setPlaceMode('food');toast('Babies placed — drop food or bank it');}
+    else if(game.myBabies===0&&game.myFood===0) toast('All placed — end your turn');
+  } else if(placeMode==='food'&&game.myFood>0){
+    const count=formation==='single'?1:game.myFood;
+    const dropped=dropFoodFormation(x,y,count,formation);
+    game.myFood-=dropped;
+    mp.placementMoves.push({type:'food',x,y,count,formation,seed:moveSeed});
+  }
+  document.getElementById('endTurnBtn').disabled=false;
+  updateUI();
+});
+
+// ── ROUND END ────────────────────────────────────────────────
+async function finishRound(){
+  const ctrl=computeAllControl();
+
+  // ── ELIMINATION CHECK — wins the match outright ──
+  const azureGone = ctrl.blueAlive === 0;
+  const crimsonGone = ctrl.redAlive === 0;
+  if(azureGone || crimsonGone) {
+    // Someone was wiped out this round
+    const elimWinner = crimsonGone ? 1 : azureGone ? 2 : (ctrl.blueMass > ctrl.redMass ? 1 : 2);
+    game.roundWinners.push(elimWinner);
+    if(elimWinner===mp.myTeam) game.myScore++; else game.oppScore++;
+    const wName = elimWinner===1?'Azure':'Crimson';
+    const lName = elimWinner===1?'Crimson':'Azure';
+    game.lastRoundSummary = `Round ${game.round}: ${lName} lineage wiped out. ${wName} achieves total domination.`;
+    toast(game.lastRoundSummary);
+    return endMatch(elimWinner, `${lName} lineage was eliminated from the field.`);
+  }
+
+  // ── NORMAL ROUND END — score Nexus control ──
+  let winner = nexus.owner||0;
+  if(!winner){winner=ctrl.azureNexus>ctrl.crimsonNexus?1:ctrl.crimsonNexus>ctrl.azureNexus?2:(ctrl.blueMass>ctrl.redMass?1:2);}
+  game.roundWinners.push(winner);
+  if(winner===mp.myTeam) game.myScore++;
+  else game.oppScore++;
+
+  if(!game.soloMode&&mp.matchKey){
+    await set(ref(db,`matches/${mp.matchKey}/round${game.round}/result`),{winner,myScore:game.myScore,oppScore:game.oppScore});
+  }
+
+  const wName=winner===1?'Azure':'Crimson';
+  game.lastRoundSummary=`Round ${game.round}: ${wName} holds the Nexus. Azure: ${ctrl.blueAlive} alive · Crimson: ${ctrl.redAlive} alive.`;
+  toast(game.lastRoundSummary);
+
+  // No round limit — keep playing until elimination
+  game.round++;game.phase='placement';game.simClock=0;
+  updateUI();startMyTurn();
+}
+
+async function endMatch(matchWinner, reason){
+  game.phase='ended';
+  // matchWinner is 1 or 2 — determine from perspective of player
+  const iWon = matchWinner === mp.myTeam;
+  const tied = false; // elimination can't tie
+  const oppName=game.soloMode?(game.aiPersonality?game.aiPersonality.name:'Crimson Host'):mp.opponentName;
+  const myTeamName = mp.myTeam===1?'Azure Vanguard':'Crimson Host';
+  const oppTeamName = mp.myTeam===1?'Crimson Host':'Azure Vanguard';
+
+  document.getElementById('winTitle').textContent = iWon ? 'Total Domination' : 'Annihilated';
+  document.getElementById('winnerText').textContent = iWon ? `${myTeamName} Prevails!` : `${oppTeamName} Prevails`;
+  document.getElementById('winnerText').className = 'winner-text ' + (iWon ? (mp.myTeam===1?'azure':'crimson') : (mp.myTeam===1?'crimson':'azure'));
+  document.getElementById('winReason').textContent = reason + ` Rounds fought: ${game.round}. Score: Azure ${game.myTeam===1?game.myScore:game.oppScore} — Crimson ${game.myTeam===2?game.myScore:game.oppScore}`;
+  document.getElementById('winAzureScore').textContent = game.myTeam===1?game.myScore:game.oppScore;
+  document.getElementById('winCrimsonScore').textContent = game.myTeam===2?game.myScore:game.oppScore;
+  document.getElementById('winOverlay').style.display='flex';
+  if(!game.soloMode&&mp.matchKey) await remove(ref(db,`matches/${mp.matchKey}`));
+}
+
+window.returnToLobby=function(){
+  document.getElementById('winOverlay').style.display='none';
+  document.getElementById('lobbyOverlay').style.display='flex';
+  document.getElementById('lobbyConnect').style.display='block';
+  document.getElementById('lobbyWaiting').style.display='none';
+  document.getElementById('leftPanel').style.display='none';
+  document.getElementById('rightPanel').style.display='none';
+  document.getElementById('centerHud').style.display='none';
+  resetWorld();game.running=false;game.phase='lobby';game.soloMode=false;
+  selectLobbyMode('ai');
+};
+
+// ── UI UPDATE ────────────────────────────────────────────────
+function updateUI(){
+  const ctrl=computeAllControl();
+  const p=game.phase;
+  if(p==='placement'){
+    document.getElementById('phaseName').textContent=`Round ${game.round} — Your Deployment`;
+    document.getElementById('phaseSub').textContent='Click field to place · Bank to save for later';
+  } else if(p==='ai-thinking'){
+    document.getElementById('phaseName').textContent=`Round ${game.round} — Crimson Deploys`;
+    document.getElementById('phaseSub').textContent=game.aiPersonality?game.aiPersonality.name+' is placing...':'AI is placing...';
+  } else if(p==='simulation'){
+    document.getElementById('phaseName').textContent=`Round ${game.round} — Simulation`;
+    document.getElementById('phaseSub').textContent='The ecosystem evolves...';
+  }
+  document.getElementById('babiesAvail').textContent=game.myBabies||0;
+  document.getElementById('foodAvail').textContent=game.myFood||0;
+  document.getElementById('babiesBanked').textContent=mp.myBankedBabies||0;
+  document.getElementById('foodBanked').textContent=mp.myBankedFood||0;
+
+  const myIsAzure=mp.myTeam===1;
+  document.getElementById('myAlive').textContent=myIsAzure?ctrl.blueAlive:ctrl.redAlive;
+  document.getElementById('myMass').textContent=(myIsAzure?ctrl.azureNexus:ctrl.crimsonNexus).toFixed(0);
+  document.getElementById('myScore').textContent=game.myScore;
+  document.getElementById('oppAlive').textContent=myIsAzure?ctrl.redAlive:ctrl.blueAlive;
+  document.getElementById('oppMass').textContent=(myIsAzure?ctrl.crimsonNexus:ctrl.azureNexus).toFixed(0);
+  document.getElementById('oppScore').textContent=game.oppScore;
+
+  document.getElementById('nexusOwnerLabel').textContent=nexus.owner===1?'Azure':nexus.owner===2?'Crimson':'Contested';
+  document.getElementById('tAzureMass').textContent=ctrl.azureNexus.toFixed(0);
+  document.getElementById('tCrimsonMass').textContent=ctrl.crimsonNexus.toFixed(0);
+
+  if(game.lastRoundSummary) document.getElementById('lastRoundText').textContent=game.lastRoundSummary;
+
+  // Round pips
+  const rt=document.getElementById('roundTrack');rt.innerHTML='';
+  // Show a sliding window of rounds — last 7 played or upcoming
+  const showFrom = Math.max(1, game.round - 3);
+  const showTo = Math.max(7, game.round + 3);
+  for(let r=showFrom;r<=showTo;r++){
+    const pip=document.createElement('div');pip.className='round-pip';
+    const w=game.roundWinners[r-1];
+    if(w===1){pip.className+=' win-azure';pip.textContent='A';}
+    else if(w===2){pip.className+=' win-crimson';pip.textContent='C';}
+    else if(r===game.round&&p!=='ended'){pip.className+=' current';pip.textContent=r;}
+    else{pip.textContent=r;pip.style.opacity='0.4';}
+    rt.appendChild(pip);
+  }
+
+  document.getElementById('endTurnBtn').disabled=p!=='placement'||mp.myTurnDone;
+  document.getElementById('bankBtn').disabled=p!=='placement'||mp.myTurnDone||(game.myBabies===0&&game.myFood===0);
+}
+
+function setConnStatus(color,label){
+  document.getElementById('connDot').className=`conn-dot ${color}`;
+  document.getElementById('connLabel').textContent=label;
+}
+
+// ── TOAST ────────────────────────────────────────────────────
+window.toast=function(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2800);
+};
+
+// ── DRAW ─────────────────────────────────────────────────────
+function drawBackground(){
+  ctx.clearRect(0,0,W,H);
+  ctx.strokeStyle='rgba(255,255,255,0.018)';ctx.lineWidth=1;
+  for(let x=0;x<W;x+=80){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=0;y<H;y+=80){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+  const t=performance.now()/1000;
+  const oc=nexus.owner===1?'74,158,255':nexus.owner===2?'232,64,64':'200,168,75';
+  const con=nexus.owner===0,pf=0.6+Math.sin(t*2.1)*0.08;
+  const aura=ctx.createRadialGradient(nexus.x,nexus.y,nexus.radius*0.3,nexus.x,nexus.y,nexus.radius*2.6);
+  aura.addColorStop(0,`rgba(${oc},${con?0.07:0.14+nexus.pressure*0.1})`);aura.addColorStop(1,`rgba(${oc},0)`);
+  ctx.fillStyle=aura;ctx.beginPath();ctx.arc(nexus.x,nexus.y,nexus.radius*2.6,0,Math.PI*2);ctx.fill();
+  const inner=ctx.createRadialGradient(nexus.x,nexus.y,0,nexus.x,nexus.y,nexus.radius);
+  inner.addColorStop(0,`rgba(${oc},${con?0.04:0.10+nexus.pressure*0.08})`);inner.addColorStop(1,`rgba(${oc},0.01)`);
+  ctx.fillStyle=inner;ctx.beginPath();ctx.arc(nexus.x,nexus.y,nexus.radius,0,Math.PI*2);ctx.fill();
+  ctx.lineWidth=3;ctx.strokeStyle=`rgba(${oc},${con?0.25:0.45+nexus.pressure*0.3})`;
+  ctx.beginPath();ctx.arc(nexus.x,nexus.y,nexus.radius*(0.98+pf*0.025),0,Math.PI*2);ctx.stroke();
+  ctx.lineWidth=1.2;ctx.strokeStyle=`rgba(255,255,255,${con?0.06:0.10+nexus.pressure*0.12})`;
+  ctx.beginPath();ctx.arc(nexus.x,nexus.y,nexus.radius*0.65,0,Math.PI*2);ctx.stroke();
+  ctx.save();ctx.fillStyle=`rgba(${oc},${con?0.3:0.6})`;
+  ctx.font=`900 ${(nexus.radius*0.22)|0}px 'Cinzel',serif`;
+  ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('NEXUS',nexus.x,nexus.y);ctx.restore();
+}
+function drawTrails(){for(const tr of trails){ctx.fillStyle=tr.team===1?`rgba(74,158,255,${tr.alpha})`:`rgba(232,64,64,${tr.alpha})`;ctx.beginPath();ctx.arc(tr.x,tr.y,tr.size,0,Math.PI*2);ctx.fill();}}
+function drawFood(){for(let i=0;i<foodCount;i++) if(falive[i]){fglow[i]+=0.055;const p=1+Math.sin(fglow[i])*0.28;ctx.fillStyle='rgba(255,210,80,0.2)';ctx.beginPath();ctx.arc(fx[i],fy[i],5.5*p,0,Math.PI*2);ctx.fill();ctx.fillStyle='rgba(255,235,150,0.88)';ctx.beginPath();ctx.arc(fx[i],fy[i],2.0*p,0,Math.PI*2);ctx.fill();}}
+function drawOrganisms(){
+  for(let i=0;i<orgCount;i++) if(oalive[i]){
+    const hue=speciesHue(oteam[i],ospecies[i]),size=osize[i]*0.88,sp=Math.hypot(ovx[i],ovy[i]),a=gAggro[i];
+    if(sp>4.5){const ang=Math.atan2(ovy[i],ovx[i]),len=4+gSpeed[i]*7+size*0.38;ctx.strokeStyle=oteam[i]===1?`rgba(74,158,255,${0.14+gSpeed[i]*0.14})`:`rgba(232,64,64,${0.14+gSpeed[i]*0.14})`;ctx.lineWidth=Math.max(0.9,size*0.26);ctx.beginPath();ctx.moveTo(ox[i]-Math.cos(ang)*len,oy[i]-Math.sin(ang)*len);ctx.lineTo(ox[i],oy[i]);ctx.stroke();}
+    if(okills[i]>2){ctx.fillStyle=oteam[i]===1?`rgba(74,158,255,${Math.min(0.3,okills[i]*0.03)})`:`rgba(232,64,64,${Math.min(0.3,okills[i]*0.03)})`;ctx.beginPath();ctx.arc(ox[i],oy[i],size*3.2,0,Math.PI*2);ctx.fill();}
+    ctx.fillStyle=`hsla(${hue},88%,62%,${0.09+a*0.17})`;ctx.beginPath();ctx.arc(ox[i],oy[i],size*2.4,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=`hsla(${hue},92%,66%,${0.17+gPerception[i]*0.08})`;ctx.beginPath();ctx.arc(ox[i],oy[i],size*1.5,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=`hsla(${hue},96%,70%,0.93)`;ctx.beginPath();ctx.arc(ox[i],oy[i],Math.max(1.1,size),0,Math.PI*2);ctx.fill();
+  }
+}
+function drawParticles(){for(const p of particles){ctx.fillStyle=`rgba(${p.color},${Math.max(0,p.life)})`;ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill();}}
+function drawSimTimer(){
+  if(game.phase!=='simulation')return;
+  const rem=Math.max(0,SIM_SECONDS-game.simClock);
+  document.getElementById('phaseSub').textContent=`${rem.toFixed(1)}s remaining · Nexus: ${nexus.owner===1?'Azure':nexus.owner===2?'Crimson':'Contested'}`;
+}
+
+// ── MAIN LOOP ────────────────────────────────────────────────
+let last=performance.now();
+function frame(now){
+  requestAnimationFrame(frame);
+  const dt=Math.min(0.033,(now-last)/1000);last=now;
+  if(game.running&&!game.paused&&game.phase==='simulation') stepSimulation(dt);
+  if(game.running&&!game.paused&&game.phase==='ai-thinking') tickAIPlacement(dt);
+  drawBackground();drawTrails();drawFood();drawOrganisms();drawParticles();drawSimTimer();
+}
+
+// ── INIT ─────────────────────────────────────────────────────
+resize();
+startLobbyListener();
+refreshLobby();
+setConnStatus('yellow','Connecting...');
+requestAnimationFrame(frame);
+
+</script>
+</body>
+</html>
