@@ -32,6 +32,16 @@ canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
 }
 .panel-drag:active{cursor:grabbing;}
 .panel-drag-icon{color:var(--muted);font-size:0.7rem;letter-spacing:0.15em;opacity:0.5;}
+.panel-minimize{
+  background:none;border:none;cursor:pointer;
+  color:var(--muted);font-size:1rem;line-height:1;
+  padding:2px 6px;border-radius:6px;
+  transition:all 0.15s;flex-shrink:0;
+}
+.panel-minimize:hover{background:rgba(255,255,255,0.08);color:var(--text);}
+.panel-body{overflow-y:auto;}
+.panel.minimized .panel-body{display:none;}
+.panel.minimized{min-height:0;resize:none;}
 .panel-title{font-family:'Cinzel',serif;font-size:0.85rem;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold2);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border)}
 .faction-header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .faction-icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
@@ -109,7 +119,14 @@ canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
 .waiting-banner{text-align:center;padding:16px;border-radius:12px;background:rgba(200,168,75,0.06);border:1px solid rgba(200,168,75,0.15);margin-top:12px}
 .waiting-banner .wt{font-family:'Cinzel',serif;font-size:0.9rem;color:var(--gold2);letter-spacing:0.1em}
 .waiting-banner .ws{font-size:0.78rem;color:var(--muted);margin-top:5px;font-style:italic}
-.winner-text{font-family:'Cinzel',serif;font-size:2rem;font-weight:900;text-align:center;margin:16px 0;text-shadow:0 0 40px currentColor}
+.round-cap-btn{
+  padding:7px 4px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);
+  background:rgba(255,255,255,0.02);color:var(--muted);cursor:pointer;
+  font-size:0.8rem;font-family:'Cinzel',serif;text-align:center;transition:all 0.15s;
+  font-weight:600;
+}
+.round-cap-btn.active{border-color:var(--border-bright);background:rgba(200,168,75,0.1);color:var(--gold2);}
+.round-cap-btn:hover:not(.active){background:rgba(255,255,255,0.06);color:var(--text);}
 .winner-text.azure{color:var(--azure2)}.winner-text.crimson{color:var(--crimson2)}.winner-text.gold{color:var(--gold2)}
 
 /* ── HOVER TOOLTIP ── */
@@ -174,8 +191,12 @@ canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
 <div class="panel panel-left" id="leftPanel" style="display:none">
   <div class="panel-drag" id="leftPanelDrag">
     <div class="panel-title" id="leftPanelTitle" style="margin:0;padding:0;border:none">Your Command</div>
-    <span class="panel-drag-icon">⠿ drag</span>
+    <div style="display:flex;align-items:center;gap:6px">
+      <span class="panel-drag-icon">⠿</span>
+      <button class="panel-minimize" onclick="togglePanel('leftPanel')" title="Minimize">−</button>
+    </div>
   </div>
+  <div class="panel-body" id="leftPanelBody">
   <div class="faction-header">
     <div class="faction-icon azure">⚔</div>
     <div>
@@ -215,14 +236,19 @@ canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
   </div>
   <button class="btn btn-azure" id="endTurnBtn" onclick="endMyTurn()" disabled>End My Turn →</button>
   <div class="help-text">Click the field to drop formations. Bank resources to save for later. Withhold food to field hungry hunters.</div>
+  </div><!-- end panel-body -->
 </div>
 
 <!-- RIGHT PANEL -->
 <div class="panel panel-right" id="rightPanel" style="display:none">
   <div class="panel-drag" id="rightPanelDrag">
     <div class="panel-title" style="margin:0;padding:0;border:none">The Battlefield</div>
-    <span class="panel-drag-icon">⠿ drag</span>
+    <div style="display:flex;align-items:center;gap:6px">
+      <span class="panel-drag-icon">⠿</span>
+      <button class="panel-minimize" onclick="togglePanel('rightPanel')" title="Minimize">−</button>
+    </div>
   </div>
+  <div class="panel-body" id="rightPanelBody">
   <div class="round-track" id="roundTrack"></div>
   <div class="divider"></div>
   <div class="faction-header">
@@ -247,11 +273,12 @@ canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
     <div class="resource-title">Last Round</div>
     <div class="stat-val" id="lastRoundText" style="font-size:0.78rem;color:var(--muted);font-style:italic;line-height:1.6">Awaiting first round.</div>
   </div>
-  <div class="divider"></div>
-  <div class="stat-row">
+  <div class="divider" id="connDivider"></div>
+  <div class="stat-row" id="connRow">
     <span class="stat-label"><span class="conn-dot" id="connDot"></span>Connection</span>
     <span class="stat-val" id="connLabel" style="font-size:0.75rem">—</span>
   </div>
+  </div><!-- end panel-body -->
 </div>
 
 <!-- LOBBY OVERLAY -->
@@ -278,6 +305,15 @@ canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
 
       <!-- AI MODE PANEL -->
       <div id="aiModePanel">
+        <div style="margin-bottom:10px">
+          <div style="font-family:'Cinzel',serif;font-size:0.7rem;letter-spacing:0.12em;color:var(--muted);margin-bottom:7px">MATCH LENGTH</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px">
+            <div class="round-cap-btn active" data-rounds="15" onclick="setRoundCap(15)">15<br><small style="opacity:0.6;font-size:0.6rem">Quick</small></div>
+            <div class="round-cap-btn" data-rounds="25" onclick="setRoundCap(25)">25<br><small style="opacity:0.6;font-size:0.6rem">Standard</small></div>
+            <div class="round-cap-btn" data-rounds="50" onclick="setRoundCap(50)">50<br><small style="opacity:0.6;font-size:0.6rem">Campaign</small></div>
+            <div class="round-cap-btn" data-rounds="999" onclick="setRoundCap(999)">∞<br><small style="opacity:0.6;font-size:0.6rem">Endless</small></div>
+          </div>
+        </div>
         <button class="btn btn-primary" onclick="startSoloMatch()" style="margin-top:0">⚔ Deploy vs AI</button>
         <div style="margin-top:10px;padding:10px 12px;border-radius:10px;background:rgba(232,64,64,0.06);border:1px solid rgba(232,64,64,0.15)">
           <div style="font-family:'Cinzel',serif;font-size:0.7rem;letter-spacing:0.12em;color:var(--crimson2);margin-bottom:4px">OPPONENT</div>
@@ -287,6 +323,15 @@ canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
 
       <!-- MULTIPLAYER PANEL -->
       <div id="mpModePanel" style="display:none">
+        <div style="margin-bottom:10px">
+          <div style="font-family:'Cinzel',serif;font-size:0.7rem;letter-spacing:0.12em;color:var(--muted);margin-bottom:7px">MATCH LENGTH</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px">
+            <div class="round-cap-btn active" data-rounds="15" onclick="setRoundCap(15)">15<br><small style="opacity:0.6;font-size:0.6rem">Quick</small></div>
+            <div class="round-cap-btn" data-rounds="25" onclick="setRoundCap(25)">25<br><small style="opacity:0.6;font-size:0.6rem">Standard</small></div>
+            <div class="round-cap-btn" data-rounds="50" onclick="setRoundCap(50)">50<br><small style="opacity:0.6;font-size:0.6rem">Campaign</small></div>
+            <div class="round-cap-btn" data-rounds="999" onclick="setRoundCap(999)">∞<br><small style="opacity:0.6;font-size:0.6rem">Endless</small></div>
+          </div>
+        </div>
         <div class="btn-row" style="margin-top:0">
           <button class="btn btn-primary" id="createMatchBtn" onclick="createMatch()" style="margin-top:0">⚔ Create Match</button>
           <button class="btn btn-ghost" id="refreshBtn" onclick="refreshLobby()" style="margin-top:0">↺ Refresh</button>
@@ -392,6 +437,16 @@ function resize() {
   if(nexus) { nexus.x = W*0.5; nexus.y = H*0.5; nexus.radius = Math.min(W,H)*0.11; }
 }
 window.addEventListener('resize', resize);
+
+// ── PANEL MINIMIZE ───────────────────────────────────────────
+window.togglePanel=function(id){
+  const panel=document.getElementById(id);
+  const body=document.getElementById(id+'Body');
+  const btn=panel.querySelector('.panel-minimize');
+  const isMin=panel.classList.toggle('minimized');
+  btn.textContent=isMin?'+':'−';
+  btn.title=isMin?'Expand':'Minimize';
+};
 
 // ── DRAGGABLE PANELS ─────────────────────────────────────────
 function makeDraggable(panel, handle){
@@ -856,6 +911,15 @@ function computeAllControl(){
   return{blueAlive:ba,redAlive:ra,blueMass:bm,redMass:rm,azureNexus:an,crimsonNexus:cn};
 }
 
+// ── ROUND CAP ────────────────────────────────────────────────
+let selectedRoundCap=15;
+window.setRoundCap=function(n){
+  selectedRoundCap=n;
+  document.querySelectorAll('.round-cap-btn').forEach(btn=>{
+    btn.classList.toggle('active', parseInt(btn.dataset.rounds)===n);
+  });
+};
+
 // ── PLACEMENT MODES ──────────────────────────────────────────
 let placeMode='babies', formation='cluster';
 window.setPlaceMode=function(m){
@@ -1056,6 +1120,10 @@ function launchGame(){
   document.getElementById('leftPanel').style.display='block';
   document.getElementById('rightPanel').style.display='block';
   document.getElementById('centerHud').style.display='block';
+  // Hide connection status for solo — only relevant for multiplayer
+  const showConn = !game.soloMode;
+  document.getElementById('connRow').style.display = showConn ? '' : 'none';
+  document.getElementById('connDivider').style.display = showConn ? '' : 'none';
 
   if(mp.myTeam===1){
     document.getElementById('myFactionName').textContent='Azure Vanguard';
@@ -1263,7 +1331,16 @@ async function finishRound(){
   game.lastRoundSummary=`Round ${game.round}: ${wName} holds the Nexus. Azure: ${ctrl.blueAlive} alive · Crimson: ${ctrl.redAlive} alive.`;
   toast(game.lastRoundSummary);
 
-  // No round limit — keep playing until elimination
+  // Check round cap — tiebreak by biomass
+  if(game.round >= selectedRoundCap){
+    const capWinner = game.myScore > game.oppScore ? mp.myTeam
+      : game.oppScore > game.myScore ? (mp.myTeam===1?2:1)
+      : (ctrl.blueMass >= ctrl.redMass ? 1 : 2);
+    const capLabel = selectedRoundCap === 999 ? 'Endless match' : `${selectedRoundCap}-round cap reached`;
+    return endMatch(capWinner, `${capLabel}. ${capWinner===1?'Azure':'Crimson'} wins by round count and biomass.`);
+  }
+
+  // Continue — keep playing until elimination or cap
   game.round++;game.phase='placement';game.simClock=0;
 
   // Leviathan tracking
@@ -1305,6 +1382,8 @@ window.returnToLobby=function(){
   document.getElementById('rightPanel').style.display='none';
   document.getElementById('centerHud').style.display='none';
   resetWorld();game.running=false;game.phase='lobby';game.soloMode=false;
+  document.getElementById('connRow').style.display='';
+  document.getElementById('connDivider').style.display='';
   selectLobbyMode('ai');
 };
 
