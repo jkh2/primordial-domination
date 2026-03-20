@@ -16,9 +16,22 @@
 html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:'Crimson Pro',Georgia,serif;color:var(--text)}
 canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
 
-.panel{position:fixed;top:16px;padding:16px;background:var(--panel);border:1px solid var(--border);border-radius:16px;backdrop-filter:blur(16px);box-shadow:0 24px 80px rgba(0,0,0,0.6),inset 0 1px 0 rgba(255,255,255,0.04);z-index:10}
-.panel-left{left:16px;width:300px;max-height:calc(100vh - 32px);overflow-y:auto}
-.panel-right{right:16px;width:280px;max-height:calc(100vh - 32px);overflow-y:auto}
+.panel{position:fixed;top:16px;padding:16px;background:var(--panel);border:1px solid var(--border);border-radius:16px;backdrop-filter:blur(16px);box-shadow:0 24px 80px rgba(0,0,0,0.6),inset 0 1px 0 rgba(255,255,255,0.04);z-index:10;
+  resize:both;overflow:auto;min-width:220px;min-height:120px;}
+.panel-left{left:16px;width:300px;max-height:calc(100vh - 32px);}
+.panel-right{right:16px;width:280px;max-height:calc(100vh - 32px);}
+/* Drag handle — top bar of panel */
+.panel-drag{
+  cursor:grab;user-select:none;
+  margin:-16px -16px 12px -16px;
+  padding:10px 16px;
+  border-radius:16px 16px 0 0;
+  background:rgba(255,255,255,0.03);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.panel-drag:active{cursor:grabbing;}
+.panel-drag-icon{color:var(--muted);font-size:0.7rem;letter-spacing:0.15em;opacity:0.5;}
 .panel-title{font-family:'Cinzel',serif;font-size:0.85rem;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold2);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border)}
 .faction-header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .faction-icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
@@ -99,6 +112,34 @@ canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
 .winner-text{font-family:'Cinzel',serif;font-size:2rem;font-weight:900;text-align:center;margin:16px 0;text-shadow:0 0 40px currentColor}
 .winner-text.azure{color:var(--azure2)}.winner-text.crimson{color:var(--crimson2)}.winner-text.gold{color:var(--gold2)}
 
+/* ── HOVER TOOLTIP ── */
+#orgTooltip{
+  position:fixed;z-index:20;pointer-events:none;
+  padding:10px 14px;border-radius:11px;
+  background:rgba(4,8,15,0.95);border:1px solid var(--border-bright);
+  font-size:0.78rem;color:var(--text);line-height:1.7;
+  box-shadow:0 12px 40px rgba(0,0,0,0.6);
+  opacity:0;transition:opacity 0.15s;min-width:160px;
+}
+#orgTooltip.show{opacity:1}
+#orgTooltip .tt-title{font-family:'Cinzel',serif;font-size:0.72rem;letter-spacing:0.12em;margin-bottom:6px}
+#orgTooltip .tt-title.azure{color:var(--azure2)}
+#orgTooltip .tt-title.crimson{color:var(--crimson2)}
+#orgTooltip .tt-title.leviathan{color:#b44fff}
+#orgTooltip .tt-row{display:flex;justify-content:space-between;gap:16px}
+#orgTooltip .tt-label{color:var(--muted);font-style:italic}
+#orgTooltip .tt-val{color:var(--text)}
+
+/* ── LEVIATHAN ── */
+.leviathan-warning{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  z-index:25;text-align:center;pointer-events:none;
+  font-family:'Cinzel',serif;font-size:1.4rem;font-weight:900;
+  color:#b44fff;text-shadow:0 0 40px #b44fff;
+  letter-spacing:0.2em;opacity:0;transition:opacity 0.4s;
+}
+.leviathan-warning.show{opacity:1}
+
 /* opponent-turn dim */
 .dim-overlay{position:fixed;inset:0;z-index:8;background:rgba(1,3,8,0.45);pointer-events:none;opacity:0;transition:opacity 0.4s}
 .dim-overlay.active{opacity:1;pointer-events:all}
@@ -108,6 +149,17 @@ canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
 </head>
 <body>
 <canvas id="sim"></canvas>
+<div id="orgTooltip">
+  <div class="tt-title" id="ttTitle">ORGANISM</div>
+  <div class="tt-row"><span class="tt-label">Size</span><span class="tt-val" id="ttSize">—</span></div>
+  <div class="tt-row"><span class="tt-label">Energy</span><span class="tt-val" id="ttEnergy">—</span></div>
+  <div class="tt-row"><span class="tt-label">Kills</span><span class="tt-val" id="ttKills">—</span></div>
+  <div class="tt-row"><span class="tt-label">Speed</span><span class="tt-val" id="ttSpeed">—</span></div>
+  <div class="tt-row"><span class="tt-label">Aggro</span><span class="tt-val" id="ttAggro">—</span></div>
+  <div class="tt-row"><span class="tt-label">Efficiency</span><span class="tt-val" id="ttEfficiency">—</span></div>
+  <div class="tt-row"><span class="tt-label">Perception</span><span class="tt-val" id="ttPerception">—</span></div>
+</div>
+<div class="leviathan-warning" id="leviathanWarning">⚠ LEVIATHAN APPROACHES ⚠</div>
 <div id="toast"></div>
 <div class="dim-overlay" id="dimOverlay"></div>
 <div class="opponent-turn-label" id="opponentLabel">CRIMSON IS DEPLOYING...</div>
@@ -120,7 +172,10 @@ canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
 
 <!-- LEFT PANEL -->
 <div class="panel panel-left" id="leftPanel" style="display:none">
-  <div class="panel-title" id="leftPanelTitle">Your Command</div>
+  <div class="panel-drag" id="leftPanelDrag">
+    <div class="panel-title" id="leftPanelTitle" style="margin:0;padding:0;border:none">Your Command</div>
+    <span class="panel-drag-icon">⠿ drag</span>
+  </div>
   <div class="faction-header">
     <div class="faction-icon azure">⚔</div>
     <div>
@@ -164,7 +219,10 @@ canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
 
 <!-- RIGHT PANEL -->
 <div class="panel panel-right" id="rightPanel" style="display:none">
-  <div class="panel-title">The Battlefield</div>
+  <div class="panel-drag" id="rightPanelDrag">
+    <div class="panel-title" style="margin:0;padding:0;border:none">The Battlefield</div>
+    <span class="panel-drag-icon">⠿ drag</span>
+  </div>
   <div class="round-track" id="roundTrack"></div>
   <div class="divider"></div>
   <div class="faction-header">
@@ -271,12 +329,8 @@ canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
 </div>
 
 <!-- Firebase SDK -->
-<script type="module">
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getDatabase, ref, set, get, onValue, off, push, remove, update, serverTimestamp }
-  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
-
-// ── FIREBASE CONFIG ──────────────────────────────────────────
+<script>
+// ── FIREBASE CONFIG (must be first) ──────────────────────────
 const firebaseConfig = {
   apiKey: "AIzaSyBGyN_Ssj-DQdUntpZIdes_-7XoQXvxG7I",
   authDomain: "primordial-domination.firebaseapp.com",
@@ -287,8 +341,39 @@ const firebaseConfig = {
   appId: "1:713165723314:web:6b505b292526e0f6619bab"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+// ── FIREBASE REFS — populated lazily when multiplayer is needed ──
+let _db=null,_fbRef,_fbSet,_fbGet,_fbOnValue,_fbOff,_fbPush,_fbRemove,_fbUpdate;
+let _fbReady=false;
+
+// Only load Firebase when player switches to multiplayer mode
+async function initFirebase(){
+  if(_fbReady) return true;
+  try {
+    const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
+    const fb = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js');
+    _fbRef=fb.ref;_fbSet=fb.set;_fbGet=fb.get;_fbOnValue=fb.onValue;_fbOff=fb.off;
+    _fbPush=fb.push;_fbRemove=fb.remove;_fbUpdate=fb.update;
+    const app=initializeApp(firebaseConfig);
+    _db=fb.getDatabase(app);
+    _fbReady=true;
+    setConnStatus('green','Connected');
+    return true;
+  } catch(e) {
+    console.error('Firebase failed:',e);
+    setConnStatus('red','Offline');
+    return false;
+  }
+}
+
+// Safe wrappers — only call when _fbReady
+function fbRef(path){return _fbRef(_db,path);}
+function fbSet(r,v){return _fbSet(r,v);}
+function fbGet(r){return _fbGet(r);}
+function fbOnValue(r,cb){return _fbOnValue(r,cb);}
+function fbOff(r){if(_fbOff)_fbOff(r);}
+function fbPush(r,v){return _fbPush(r,v);}
+function fbRemove(r){return _fbRemove(r);}
+function fbUpdate(r,v){return _fbUpdate(r,v);}
 
 // ── CANVAS ───────────────────────────────────────────────────
 const canvas = document.getElementById('sim');
@@ -308,10 +393,51 @@ function resize() {
 }
 window.addEventListener('resize', resize);
 
+// ── DRAGGABLE PANELS ─────────────────────────────────────────
+function makeDraggable(panel, handle){
+  let dragging=false, startX=0, startY=0, origLeft=0, origTop=0;
+  handle.addEventListener('mousedown', ev=>{
+    if(ev.target.tagName==='BUTTON') return;
+    dragging=true;
+    const rect=panel.getBoundingClientRect();
+    startX=ev.clientX; startY=ev.clientY;
+    origLeft=rect.left; origTop=rect.top;
+    panel.style.right='auto'; // detach from right anchor
+    panel.style.left=origLeft+'px';
+    panel.style.top=origTop+'px';
+    ev.preventDefault();
+  });
+  document.addEventListener('mousemove', ev=>{
+    if(!dragging) return;
+    const dx=ev.clientX-startX, dy=ev.clientY-startY;
+    panel.style.left=clamp(origLeft+dx, 0, innerWidth-80)+'px';
+    panel.style.top=clamp(origTop+dy, 0, innerHeight-80)+'px';
+  });
+  document.addEventListener('mouseup', ()=>{ dragging=false; });
+  // Touch support
+  handle.addEventListener('touchstart', ev=>{
+    const t=ev.touches[0];
+    const rect=panel.getBoundingClientRect();
+    dragging=true; startX=t.clientX; startY=t.clientY;
+    origLeft=rect.left; origTop=rect.top;
+    panel.style.right='auto';
+    panel.style.left=origLeft+'px';
+    panel.style.top=origTop+'px';
+  },{passive:true});
+  document.addEventListener('touchmove', ev=>{
+    if(!dragging) return;
+    const t=ev.touches[0];
+    const dx=t.clientX-startX, dy=t.clientY-startY;
+    panel.style.left=clamp(origLeft+dx, 0, innerWidth-80)+'px';
+    panel.style.top=clamp(origTop+dy, 0, innerHeight-80)+'px';
+  },{passive:true});
+  document.addEventListener('touchend', ()=>{ dragging=false; });
+}
+
 // ── CONSTANTS ────────────────────────────────────────────────
 const MAX_ORG=10000, MAX_FOOD=5000, CELL=52, GMAX=64, FGMAX=36;
 const SIM_SECONDS=30, SIM_SPEED=1.4, START_SIZE=3.2, MAX_SIZE=20, EAT_RATIO=1.65;
-const BASE_BABIES=8, BASE_FOOD=10, TERRITORY_BABY_BONUS=3, TERRITORY_FOOD_BONUS=5;
+const BASE_BABIES=8, BASE_FOOD=20, TERRITORY_BABY_BONUS=3, TERRITORY_FOOD_BONUS=8;
 const ROUNDS_TO_WIN=4, TOTAL_ROUNDS=999, SPECIES_PER_TEAM=4;
 
 // ── TYPED ARRAYS ─────────────────────────────────────────────
@@ -390,6 +516,140 @@ function hsl(h,s,l,a=1){return `hsla(${h},${s}%,${l}%,${a})`;}
 
 let particles=[],trails=[];
 
+// ── SOUND SYSTEM ─────────────────────────────────────────────
+let audioCtx=null;
+function getAudio(){
+  if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  return audioCtx;
+}
+function playTone(freq,type,vol,dur,fadeOut=true){
+  try{
+    const ac=getAudio();
+    const osc=ac.createOscillator();
+    const gain=ac.createGain();
+    osc.connect(gain);gain.connect(ac.destination);
+    osc.type=type;osc.frequency.setValueAtTime(freq,ac.currentTime);
+    gain.gain.setValueAtTime(vol,ac.currentTime);
+    if(fadeOut) gain.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+dur);
+    osc.start(ac.currentTime);osc.stop(ac.currentTime+dur);
+  }catch(e){}
+}
+function sfxClick(){playTone(440,'sine',0.08,0.06);}
+function sfxPlace(){playTone(330,'sine',0.12,0.12);}
+function sfxFoodPlace(){playTone(550,'sine',0.08,0.08);}
+function sfxEat(){playTone(180,'sawtooth',0.06,0.08);}
+function sfxCapture(team){
+  const freq=team===1?520:380;
+  playTone(freq,'sine',0.18,0.3);
+  setTimeout(()=>playTone(freq*1.25,'sine',0.12,0.25),120);
+}
+function sfxLeviathan(){
+  playTone(60,'sawtooth',0.22,0.6);
+  setTimeout(()=>playTone(45,'sawtooth',0.18,0.8),300);
+  setTimeout(()=>playTone(55,'sawtooth',0.14,1.0),700);
+}
+
+// ── LEVIATHAN ────────────────────────────────────────────────
+const LEV_SPEED=52;
+const LEV_SIZE=22;
+const LEV_PERCEPTION=140;
+const lev={
+  alive:false, x:0, y:0, vx:0, vy:0,
+  phase:'edge',     // 'edge' | 'crossing'
+  edgeAngle:0,      // current angle around perimeter
+  crossTarget:{x:0,y:0},
+  roundsSinceRelease:0,
+  warningShown:false
+};
+
+function spawnLeviathan(){
+  // Start at a random edge position
+  const side=Math.floor(rand()*4);
+  if(side===0){lev.x=rand()*W;lev.y=0;}
+  else if(side===1){lev.x=W;lev.y=rand()*H;}
+  else if(side===2){lev.x=rand()*W;lev.y=H;}
+  else{lev.x=0;lev.y=rand()*H;}
+  lev.vx=0;lev.vy=0;lev.alive=true;lev.phase='edge';
+  lev.warningShown=false;
+  sfxLeviathan();
+  showLeviathanWarning();
+}
+
+function showLeviathanWarning(){
+  const el=document.getElementById('leviathanWarning');
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),2500);
+}
+
+function releaseLeviathan(){
+  // Send leviathan crossing through the center
+  lev.phase='crossing';
+  const targetX=W-lev.x+rand()*W*0.3-W*0.15;
+  const targetY=H-lev.y+rand()*H*0.3-H*0.15;
+  lev.crossTarget={x:clamp(targetX,0,W),y:clamp(targetY,0,H)};
+  sfxLeviathan();
+  const el=document.getElementById('leviathanWarning');
+  el.textContent='⚠ LEVIATHAN UNLEASHED ⚠';
+  el.classList.add('show');
+  setTimeout(()=>{el.classList.remove('show');el.textContent='⚠ LEVIATHAN APPROACHES ⚠';},2500);
+}
+
+function stepLeviathan(dt){
+  if(!lev.alive) return;
+
+  if(lev.phase==='edge'){
+    // Patrol perimeter clockwise — keep close to edge
+    // Use angle around screen center to drive clockwise movement
+    const cx=W/2, cy=H/2;
+    const angle=Math.atan2(lev.y-cy, lev.x-cx);
+    // Next clockwise angle
+    const nextAngle=angle+0.04;
+    // Project onto screen edge at that angle
+    const cos=Math.cos(nextAngle), sin=Math.sin(nextAngle);
+    const edgeDist=Math.min(
+      Math.abs(cx/cos)||1e9, Math.abs(cy/sin)||1e9,
+      Math.abs((W-cx)/cos)||1e9, Math.abs((H-cy)/sin)||1e9
+    );
+    const edgeFactor=0.88; // stay slightly inside edge
+    const tx=cx+cos*edgeDist*edgeFactor;
+    const ty=cy+sin*edgeDist*edgeFactor;
+    const dx=tx-lev.x, dy=ty-lev.y;
+    const d=Math.max(1,Math.hypot(dx,dy));
+    lev.vx=(lev.vx+(dx/d)*2.2)*0.90;
+    lev.vy=(lev.vy+(dy/d)*2.2)*0.90;
+  } else {
+    // Crossing — beeline through center to far side
+    const dx=lev.crossTarget.x-lev.x, dy=lev.crossTarget.y-lev.y;
+    const d=Math.max(1,Math.hypot(dx,dy));
+    lev.vx=(lev.vx+(dx/d)*2.8)*0.94;
+    lev.vy=(lev.vy+(dy/d)*2.8)*0.94;
+    if(d<80){ lev.phase='edge'; }
+  }
+
+  const sp=Math.hypot(lev.vx,lev.vy);
+  if(sp>LEV_SPEED){ lev.vx=lev.vx/sp*LEV_SPEED; lev.vy=lev.vy/sp*LEV_SPEED; }
+  lev.x=clamp(lev.x+lev.vx*dt, 10, W-10);
+  lev.y=clamp(lev.y+lev.vy*dt, 10, H-10);
+
+  // Eat nearby organisms AND food
+  const lr2=LEV_PERCEPTION*LEV_PERCEPTION;
+  for(let i=0;i<orgCount;i++) if(oalive[i]){
+    const dx=ox[i]-lev.x,dy=oy[i]-lev.y;
+    if(dx*dx+dy*dy<lr2){
+      const eatDist=(LEV_SIZE+osize[i]+4);
+      if(dx*dx+dy*dy<eatDist*eatDist){
+        killOrganism(i);
+        sfxEat();
+        particles.push({x:lev.x,y:lev.y,vx:(rand()-0.5)*4,vy:(rand()-0.5)*4,life:0.6,size:3,color:'180,64,255'});
+      }
+    }
+  }
+  for(let i=0;i<foodCount;i++) if(falive[i]){
+    const dx=fx[i]-lev.x,dy=fy[i]-lev.y;
+    if(dx*dx+dy*dy<(LEV_SIZE+8)*(LEV_SIZE+8)) falive[i]=0;
+  }
+}
+
 // ── WORLD ────────────────────────────────────────────────────
 function resetWorld(){
   orgCount=0;foodCount=0;particles.length=0;trails.length=0;
@@ -402,6 +662,7 @@ function spawnDeathFX(x,y,team,size){
 }
 function spawnCaptureFX(x,y,team){
   for(let i=0;i<24;i++) particles.push({x,y,vx:Math.cos(i/24*Math.PI*2)*(1.6+rand()*2.8),vy:Math.sin(i/24*Math.PI*2)*(1.6+rand()*2.8),life:0.8+rand()*0.5,size:2+rand()*2.5,color:team===1?'74,158,255':team===2?'232,64,64':'200,168,75'});
+  if(team>0) sfxCapture(team);
 }
 
 function addFood(x,y){
@@ -481,7 +742,14 @@ function buildFoodGrid(){
 
 // ── SIMULATION ───────────────────────────────────────────────
 function canEat(a,b){if(!oalive[b]||a===b)return false;if(oteam[a]===oteam[b])return false;return osize[a]>osize[b]*EAT_RATIO;}
-function killOrganism(victim){if(!oalive[victim])return;oalive[victim]=0;spawnDeathFX(ox[victim],oy[victim],oteam[victim],osize[victim]);}
+let lastEatSfx=0;
+function killOrganism(victim){
+  if(!oalive[victim])return;
+  oalive[victim]=0;
+  spawnDeathFX(ox[victim],oy[victim],oteam[victim],osize[victim]);
+  const now=performance.now();
+  if(now-lastEatSfx>120){lastEatSfx=now;sfxEat();}
+}
 function reproduce(i){
   if(!oalive[i])return;oenergy[i]*=0.55;osize[i]=clamp(Math.sqrt(Math.max(0.5,oenergy[i]))*1.55,1,MAX_SIZE);
   for(let n=0;n<4;n++) addOrganism(ox[i]+(rand()-0.5)*22,oy[i]+(rand()-0.5)*22,oteam[i],i);
@@ -560,6 +828,7 @@ function stepSimulation(dt){
   for(let i=trails.length-1;i>=0;i--){trails[i].alpha-=dt*0.38;if(trails[i].alpha<=0)trails.splice(i,1);}
   for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt*1.2;p.x+=p.vx;p.y+=p.vy;p.vx*=0.986;p.vy*=0.986;if(p.life<=0)particles.splice(i,1);}
   computeNexusControl();
+  stepLeviathan(dt/SIM_SPEED); // use real dt not sped-up
   if(game.simClock>=SIM_SECONDS) finishRound();
 }
 
@@ -621,7 +890,11 @@ window.selectLobbyMode=function(mode){
     aiCard.style.borderColor='rgba(255,255,255,0.08)';aiCard.style.background='rgba(255,255,255,0.02)';
     aiCard.querySelector('div').style.color='var(--muted)';
     aiPanel.style.display='none';mpPanel.style.display='block';
-    refreshLobby();
+    // Only load Firebase when player actually wants multiplayer
+    initFirebase().then(ok=>{
+      if(ok){ startLobbyListener(); refreshLobby(); }
+      else { document.getElementById('lobbyList').innerHTML='<div class="lobby-empty">Could not connect. Check your connection.</div>'; }
+    });
   }
 };
 
@@ -631,13 +904,11 @@ window.startSoloMatch=function(){
   mp.myName=name; mp.myTeam=1; mp.myRole='host'; mp.opponentName='Crimson Host';
   game.soloMode=true;
   game.matchSeed=(Date.now()^(Math.random()*0xffffffff))>>>0;
-  // Pick random AI personality
   const keys=Object.keys(AI_PERSONALITIES);
   setSeed(game.matchSeed);
   game.aiPersonality=AI_PERSONALITIES[keys[(rand()*keys.length)|0]];
   game.aiBankedBabies=0; game.aiBankedFood=0;
   document.getElementById('oppNameTag').textContent=game.aiPersonality.name;
-  document.getElementById('personalityCard') && (document.getElementById('personalityCard').style.display='block');
   launchGame();
   toast(`Solo match begun · You face ${game.aiPersonality.name}`);
 };
@@ -699,8 +970,9 @@ let lobbyRef=null;
 let lobbyUnsubscribe=null;
 
 window.refreshLobby=async function(){
+  if(!_fbReady){document.getElementById('lobbyList').innerHTML='<div class="lobby-empty">Connecting to Firebase...</div>';return;}
   renderLobbyList([]);
-  const snap=await get(ref(db,'lobby'));
+  const snap=await fbGet(fbRef('lobby'));
   const matches=[];
   if(snap.exists()) snap.forEach(c=>{const v=c.val();if(v.status==='waiting')matches.push({key:c.key,...v});});
   renderLobbyList(matches);
@@ -718,8 +990,9 @@ function renderLobbyList(matches){
 
 // Start live lobby listener
 function startLobbyListener(){
-  lobbyRef=ref(db,'lobby');
-  lobbyUnsubscribe=onValue(lobbyRef,snap=>{
+  if(!_fbReady||lobbyUnsubscribe) return;
+  lobbyRef=fbRef('lobby');
+  lobbyUnsubscribe=fbOnValue(lobbyRef,snap=>{
     const matches=[];
     if(snap.exists()) snap.forEach(c=>{const v=c.val();if(v.status==='waiting')matches.push({key:c.key,...v});});
     renderLobbyList(matches);
@@ -738,15 +1011,15 @@ window.createMatch=async function(){
     status:'waiting', seed,
     round:1, createdAt:Date.now()
   };
-  const newRef=push(ref(db,'lobby'),matchData);
+  const newRef=await fbPush(fbRef('lobby'),matchData);
   mp.matchKey=newRef.key;
-  mp.matchRef=ref(db,'lobby/'+mp.matchKey);
+  mp.matchRef=fbRef('lobby/'+mp.matchKey);
   document.getElementById('lobbyConnect').style.display='none';
   document.getElementById('lobbyWaiting').style.display='block';
   document.getElementById('waitingTitle').textContent='⚔ Match Created — Waiting...';
   document.getElementById('shareUrl').textContent=location.href;
   // Watch for guest joining
-  onValue(mp.matchRef,snap=>{
+  fbOnValue(mp.matchRef,snap=>{
     const v=snap.val();
     if(!v)return;
     if(v.status==='active'&&v.guestId&&v.guestId!==mp.myId){
@@ -761,16 +1034,16 @@ window.joinMatch=async function(key,hostName){
   const name=document.getElementById('playerNameInput').value.trim();
   if(!name){toast('Enter your commander name first');return;}
   mp.myName=name; mp.myRole='guest'; mp.myTeam=2; mp.matchKey=key; mp.opponentName=hostName;
-  mp.matchRef=ref(db,'lobby/'+key);
-  const snap=await get(mp.matchRef);
+  mp.matchRef=fbRef('lobby/'+key);
+  const snap=await fbGet(mp.matchRef);
   if(!snap.exists()||snap.val().status!=='waiting'){toast('Match no longer available');refreshLobby();return;}
   game.matchSeed=snap.val().seed;
-  await update(mp.matchRef,{status:'active',guestId:mp.myId,guestName:name});
+  await fbUpdate(mp.matchRef,{status:'active',guestId:mp.myId,guestName:name});
   startMatch();
 };
 
 window.cancelMatch=async function(){
-  if(mp.matchKey) await remove(ref(db,'lobby/'+mp.matchKey));
+  if(mp.matchKey) await fbRemove(fbRef('lobby/'+mp.matchKey));
   mp.matchKey=null; mp.matchRef=null;
   document.getElementById('lobbyConnect').style.display='block';
   document.getElementById('lobbyWaiting').style.display='none';
@@ -778,7 +1051,7 @@ window.cancelMatch=async function(){
 
 // ── MATCH START ──────────────────────────────────────────────
 function launchGame(){
-  if(lobbyUnsubscribe){off(ref(db,'lobby'));lobbyUnsubscribe=null;}
+  if(lobbyUnsubscribe){fbOff(fbRef('lobby'));lobbyUnsubscribe=null;}
   document.getElementById('lobbyOverlay').style.display='none';
   document.getElementById('leftPanel').style.display='block';
   document.getElementById('rightPanel').style.display='block';
@@ -810,7 +1083,9 @@ function launchGame(){
   game.running=true;game.paused=false;game.phase='placement';
   game.round=1;game.simClock=0;game.myScore=0;game.oppScore=0;
   game.roundWinners=[];
+  game.myBankedBabies=0;game.myBankedFood=0;
   mp.myBankedBabies=0;mp.myBankedFood=0;
+  lev.alive=false;lev.roundsSinceRelease=0;
   mp.myTurnDone=false;mp.oppTurnDone=false;
   mp.placementMoves=[];mp.opponentMoves=[];
 
@@ -828,10 +1103,11 @@ function startMatch(){
 
 // ── PLACEMENT SYNC ───────────────────────────────────────────
 function listenForOpponentMoves(){
+  if(!_fbReady) return;
   const path=`matches/${mp.matchKey}/round${game.round}/moves/${mp.myTeam===1?'crimson':'azure'}`;
-  const moveRef=ref(db,path);
-  if(mp.placementListener) off(moveRef);
-  onValue(moveRef,snap=>{
+  const moveRef=fbRef(path);
+  if(mp.placementListener) fbOff(moveRef);
+  fbOnValue(moveRef,snap=>{
     if(!snap.exists())return;
     const moves=snap.val();
     if(Array.isArray(moves)&&moves.length>0&&!mp.oppTurnDone){
@@ -844,8 +1120,6 @@ function listenForOpponentMoves(){
 
 function applyOpponentMoves(moves){
   const team=mp.myTeam===1?2:1;
-  // Re-seed so opponent's organisms match their view
-  // We use a deterministic sub-seed per move
   for(const m of moves){
     setSeed(m.seed);
     if(m.type==='baby') dropFormation(m.x,m.y,team,m.count,m.formation);
@@ -857,7 +1131,7 @@ function applyOpponentMoves(moves){
 async function sendMyMoves(){
   const team=mp.myTeam===1?'azure':'crimson';
   const path=`matches/${mp.matchKey}/round${game.round}/moves/${team}`;
-  await set(ref(db,path),mp.placementMoves);
+  await fbSet(fbRef(path),mp.placementMoves);
   mp.myTurnDone=true;
   checkBothReady();
 }
@@ -889,9 +1163,9 @@ function startMyTurn(){
   game.phase='placement';
   const bonusBaby=nexus.owner===mp.myTeam?TERRITORY_BABY_BONUS:0;
   const bonusFood=nexus.owner===mp.myTeam?TERRITORY_FOOD_BONUS:0;
-  game.myBabies=BASE_BABIES+bonusBaby+(mp.myBankedBabies||0);
-  game.myFood=BASE_FOOD+bonusFood+(mp.myBankedFood||0);
-  mp.myBankedBabies=0;mp.myBankedFood=0;
+  game.myBabies=BASE_BABIES+bonusBaby+game.myBankedBabies;
+  game.myFood=BASE_FOOD+bonusFood+game.myBankedFood;
+  game.myBankedBabies=0;game.myBankedFood=0;
   mp.myTurnDone=false;mp.oppTurnDone=false;
   mp.placementMoves=[];
   setPlaceMode('babies');
@@ -902,15 +1176,21 @@ function startMyTurn(){
 }
 
 window.bankRemaining=function(){
-  mp.myBankedBabies=(mp.myBankedBabies||0)+game.myBabies;
-  mp.myBankedFood=(mp.myBankedFood||0)+game.myFood;
+  game.myBankedBabies+=game.myBabies;
+  game.myBankedFood+=game.myFood;
   game.myBabies=0;game.myFood=0;
   updateUI();
-  toast(`Banked for next round — ${mp.myBankedBabies} babies & ${mp.myBankedFood} food`);
+  toast(`Banked — ${game.myBankedBabies} babies & ${game.myBankedFood} food saved for next round`);
 };
 
 window.endMyTurn=async function(){
   if(game.phase!=='placement')return;
+  // Auto-bank any unspent resources — nothing is ever lost
+  if(game.myBabies>0||game.myFood>0){
+    game.myBankedBabies+=game.myBabies;
+    game.myBankedFood+=game.myFood;
+    game.myBabies=0;game.myFood=0;
+  }
   if(game.soloMode){
     // Solo: trigger AI placement immediately
     game.phase='ai-thinking';
@@ -976,7 +1256,7 @@ async function finishRound(){
   else game.oppScore++;
 
   if(!game.soloMode&&mp.matchKey){
-    await set(ref(db,`matches/${mp.matchKey}/round${game.round}/result`),{winner,myScore:game.myScore,oppScore:game.oppScore});
+    await fbSet(fbRef(`matches/${mp.matchKey}/round${game.round}/result`),{winner,myScore:game.myScore,oppScore:game.oppScore});
   }
 
   const wName=winner===1?'Azure':'Crimson';
@@ -985,6 +1265,15 @@ async function finishRound(){
 
   // No round limit — keep playing until elimination
   game.round++;game.phase='placement';game.simClock=0;
+
+  // Leviathan tracking
+  lev.roundsSinceRelease++;
+  if(!lev.alive && game.round>=3) spawnLeviathan();
+  else if(lev.alive && lev.phase==='edge' && lev.roundsSinceRelease>=5){
+    lev.roundsSinceRelease=0;
+    releaseLeviathan();
+  }
+
   updateUI();startMyTurn();
 }
 
@@ -1004,7 +1293,7 @@ async function endMatch(matchWinner, reason){
   document.getElementById('winAzureScore').textContent = game.myTeam===1?game.myScore:game.oppScore;
   document.getElementById('winCrimsonScore').textContent = game.myTeam===2?game.myScore:game.oppScore;
   document.getElementById('winOverlay').style.display='flex';
-  if(!game.soloMode&&mp.matchKey) await remove(ref(db,`matches/${mp.matchKey}`));
+  if(!game.soloMode&&mp.matchKey) await fbRemove(fbRef(`matches/${mp.matchKey}`));
 }
 
 window.returnToLobby=function(){
@@ -1035,8 +1324,8 @@ function updateUI(){
   }
   document.getElementById('babiesAvail').textContent=game.myBabies||0;
   document.getElementById('foodAvail').textContent=game.myFood||0;
-  document.getElementById('babiesBanked').textContent=mp.myBankedBabies||0;
-  document.getElementById('foodBanked').textContent=mp.myBankedFood||0;
+  document.getElementById('babiesBanked').textContent=game.myBankedBabies||0;
+  document.getElementById('foodBanked').textContent=game.myBankedFood||0;
 
   const myIsAzure=mp.myTeam===1;
   document.getElementById('myAlive').textContent=myIsAzure?ctrl.blueAlive:ctrl.redAlive;
@@ -1124,6 +1413,112 @@ function drawSimTimer(){
   document.getElementById('phaseSub').textContent=`${rem.toFixed(1)}s remaining · Nexus: ${nexus.owner===1?'Azure':nexus.owner===2?'Crimson':'Contested'}`;
 }
 
+function drawLeviathan(){
+  if(!lev.alive) return;
+  const t=performance.now()/1000;
+  const pulse=1+Math.sin(t*3)*0.12;
+  // Outer glow
+  const glow=ctx.createRadialGradient(lev.x,lev.y,4,lev.x,lev.y,LEV_SIZE*3.5*pulse);
+  glow.addColorStop(0,'rgba(180,64,255,0.25)');
+  glow.addColorStop(1,'rgba(180,64,255,0)');
+  ctx.fillStyle=glow;
+  ctx.beginPath();ctx.arc(lev.x,lev.y,LEV_SIZE*3.5*pulse,0,Math.PI*2);ctx.fill();
+  // Body
+  ctx.fillStyle=`rgba(140,40,220,0.18)`;
+  ctx.beginPath();ctx.arc(lev.x,lev.y,LEV_SIZE*1.8,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='rgba(200,100,255,0.85)';
+  ctx.beginPath();ctx.arc(lev.x,lev.y,LEV_SIZE,0,Math.PI*2);ctx.fill();
+  // Core
+  ctx.fillStyle='rgba(240,200,255,0.95)';
+  ctx.beginPath();ctx.arc(lev.x,lev.y,LEV_SIZE*0.4,0,Math.PI*2);ctx.fill();
+  // Label
+  ctx.save();
+  ctx.fillStyle='rgba(220,160,255,0.7)';
+  ctx.font=`700 10px 'Cinzel',serif`;
+  ctx.textAlign='center';ctx.textBaseline='bottom';
+  ctx.fillText('LEVIATHAN',lev.x,lev.y-LEV_SIZE-4);
+  ctx.restore();
+}
+
+// ── HOVER TOOLTIP ────────────────────────────────────────────
+const tooltip=document.getElementById('orgTooltip');
+let tooltipVisible=false;
+
+canvas.addEventListener('mousemove',ev=>{
+  if(game.phase!=='placement'&&game.phase!=='simulation') return;
+  const rect=canvas.getBoundingClientRect();
+  const mx=ev.clientX-rect.left, my=ev.clientY-rect.top;
+
+  // Check Leviathan first
+  if(lev.alive){
+    const dx=mx-lev.x,dy=my-lev.y;
+    if(dx*dx+dy*dy<(LEV_SIZE+10)*(LEV_SIZE+10)){
+      document.getElementById('ttTitle').textContent='LEVIATHAN';
+      document.getElementById('ttTitle').className='tt-title leviathan';
+      document.getElementById('ttSize').textContent=LEV_SIZE.toFixed(1);
+      document.getElementById('ttEnergy').textContent='∞';
+      document.getElementById('ttKills').textContent='—';
+      document.getElementById('ttSpeed').textContent='Slow';
+      document.getElementById('ttAggro').textContent='Apex';
+      document.getElementById('ttEfficiency').textContent='—';
+      document.getElementById('ttPerception').textContent=LEV_PERCEPTION+'px';
+      tooltip.style.left=(ev.clientX+16)+'px';
+      tooltip.style.top=(ev.clientY-10)+'px';
+      tooltip.classList.add('show');
+      tooltipVisible=true;
+      return;
+    }
+  }
+
+  // Find nearest organism within 20px
+  let closest=-1, closestD=20*20;
+  for(let i=0;i<orgCount;i++) if(oalive[i]){
+    const dx=ox[i]-mx, dy=oy[i]-my;
+    const d2=dx*dx+dy*dy;
+    if(d2<closestD){closestD=d2;closest=i;}
+  }
+  if(closest>=0){
+    const team=oteam[closest];
+    const label=team===1?'AZURE':'CRIMSON';
+    const cls=team===1?'azure':'crimson';
+    document.getElementById('ttTitle').textContent=`${label} · S${ospecies[closest]+1} · ${okills[closest]>5?'⚔ VETERAN':okills[closest]>0?'⚔ FIGHTER':'ROOKIE'}`;
+    document.getElementById('ttTitle').className=`tt-title ${cls}`;
+    document.getElementById('ttSize').textContent=osize[closest].toFixed(1);
+    document.getElementById('ttEnergy').textContent=oenergy[closest].toFixed(1);
+    document.getElementById('ttKills').textContent=okills[closest];
+    document.getElementById('ttSpeed').textContent=gSpeed[closest].toFixed(2);
+    document.getElementById('ttAggro').textContent=gAggro[closest].toFixed(2);
+    document.getElementById('ttEfficiency').textContent=gEfficiency[closest].toFixed(2);
+    document.getElementById('ttPerception').textContent=gPerception[closest].toFixed(2);
+    tooltip.style.left=(ev.clientX+16)+'px';
+    tooltip.style.top=(ev.clientY-10)+'px';
+    tooltip.classList.add('show');
+    tooltipVisible=true;
+  } else {
+    tooltip.classList.remove('show');
+    tooltipVisible=false;
+  }
+});
+
+canvas.addEventListener('mouseleave',()=>{
+  tooltip.classList.remove('show');
+  tooltipVisible=false;
+});
+
+// ── BUTTON SOUND EFFECTS ─────────────────────────────────────
+document.querySelectorAll('.btn,.mode-btn,.place-btn').forEach(btn=>{
+  btn.addEventListener('mouseenter',()=>sfxClick());
+});
+
+// Override canvas click to add placement sounds
+const _origClick=canvas.onclick;
+canvas.addEventListener('click',()=>{
+  if(game.phase==='placement'){
+    if(placeMode==='babies'&&game.myBabies>0) sfxPlace();
+    else if(placeMode==='food'&&game.myFood>0) sfxFoodPlace();
+  }
+});
+
 // ── MAIN LOOP ────────────────────────────────────────────────
 let last=performance.now();
 function frame(now){
@@ -1131,16 +1526,16 @@ function frame(now){
   const dt=Math.min(0.033,(now-last)/1000);last=now;
   if(game.running&&!game.paused&&game.phase==='simulation') stepSimulation(dt);
   if(game.running&&!game.paused&&game.phase==='ai-thinking') tickAIPlacement(dt);
-  drawBackground();drawTrails();drawFood();drawOrganisms();drawParticles();drawSimTimer();
+  drawBackground();drawTrails();drawFood();drawOrganisms();drawLeviathan();drawParticles();drawSimTimer();
 }
 
 // ── INIT ─────────────────────────────────────────────────────
 resize();
-startLobbyListener();
-refreshLobby();
+// Init draggable panels
+makeDraggable(document.getElementById('leftPanel'), document.getElementById('leftPanelDrag'));
+makeDraggable(document.getElementById('rightPanel'), document.getElementById('rightPanelDrag'));
 setConnStatus('yellow','Connecting...');
 requestAnimationFrame(frame);
-
 </script>
 </body>
 </html>
