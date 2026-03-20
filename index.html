@@ -336,7 +336,7 @@ function buildSpatial() {
 }
 
 // ── NEXUS ────────────────────────────────────────────────────
-const nexus={x:0,y:0,radius:90,owner:0,pressure:0,foodClock:0,FOOD_INTERVAL:4,FOOD_CAP:20};
+const nexus={x:0,y:0,radius:90,owner:0,pressure:0,foodClock:0,FOOD_INTERVAL:2.5,FOOD_CAP:30};
 
 // ── GAME STATE ───────────────────────────────────────────────
 const game={
@@ -492,7 +492,7 @@ function updateNexusGrowth(dt){
   let near=0;
   for(let i=0;i<foodCount;i++) if(falive[i]){const dx=fx[i]-nexus.x,dy=fy[i]-nexus.y;if(dx*dx+dy*dy<nexus.radius*nexus.radius*1.4)near++;}
   if(near>=nexus.FOOD_CAP)return;
-  for(let n=0;n<3;n++){const a=rand()*Math.PI*2,r=rand()*nexus.radius*0.75;addFood(nexus.x+Math.cos(a)*r,nexus.y+Math.sin(a)*r);}
+  for(let n=0;n<3;n++){const a=rand()*Math.PI*2,r=nexus.radius*0.4+rand()*nexus.radius*0.8;addFood(nexus.x+Math.cos(a)*r,nexus.y+Math.sin(a)*r);}
 }
 
 function stepSimulation(dt){
@@ -503,7 +503,7 @@ function stepSimulation(dt){
     if(!oalive[i])continue;
     let ax=0,ay=0,swarm=0;
     const myX=ox[i],myY=oy[i],mySize=osize[i],myTeam=oteam[i];
-    const myAgg=1+gAggro[i]*1.8,myPerc=Math.min(3,1+(gPerception[i]*2)|0);
+    const myAgg=1+gAggro[i]*1.8,myPerc=Math.min(4,2+(gPerception[i]*2)|0);
     const cx=Math.min(gridW-1,Math.max(0,(myX/CELL)|0)),cy_=Math.min(gridH-1,Math.max(0,(myY/CELL)|0));
     for(let yy=-myPerc;yy<=myPerc;yy++){
       const ny=cy_+yy;if(ny<0||ny>=gridH)continue;
@@ -537,12 +537,11 @@ function stepSimulation(dt){
     }
     if(bestFood>=0){
       const dx=fx[bestFood]-myX,dy=fy[bestFood]-myY,d=Math.max(1,Math.sqrt(dx*dx+dy*dy));
-      const ff=0.26/d*(1.1+gPerception[i]*1.6);ax+=dx/d*ff;ay+=dy/d*ff;
+      const ff=0.26/d*(1.4+gPerception[i]*2.2);ax+=dx/d*ff;ay+=dy/d*ff;
       if(d<mySize+4.5){falive[bestFood]=0;oenergy[i]+=3.2;}
     }
-    {const dx=nexus.x-myX,dy=nexus.y-myY,d2=dx*dx+dy*dy;
-     if(d2<nexus.radius*nexus.radius*9){const d=Math.max(1,Math.sqrt(d2)),f=0.0042*(nexus.radius/d);ax+=dx/d*f;ay+=dy/d*f;}}
-    if(nexus.owner===myTeam){ax*=1.06;ay*=1.06;oenergy[i]+=0.012*dt;}
+    // No artificial nexus pull — food placement and hunger drive movement naturally
+    // No artificial nexus momentum boost — pure drive-based movement only
     const speedLim=92*(0.98/(1+mySize*0.032))*(0.95+gSpeed[i]*1.5);
     ovx[i]=(ovx[i]+ax*dt*820)*0.992;ovy[i]=(ovy[i]+ay*dt*820)*0.992;
     const sp=Math.hypot(ovx[i],ovy[i]);if(sp>speedLim){ovx[i]=ovx[i]/sp*speedLim;ovy[i]=ovy[i]/sp*speedLim;}
