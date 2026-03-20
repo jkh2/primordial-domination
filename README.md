@@ -2,7 +2,7 @@
 
 ### A real-time ecosystem war game — strategy meets evolution
 
-**[Play Now](https://jkh2.github.io/Primordial-Domination/)** · Single-file HTML · Zero install · GitHub Pages
+**[Play Now](https://jkh2.github.io/primordial-domination/)** · Single-file HTML · Zero install · GitHub Pages
 
 Built by [Sentinel AI Systems](https://github.com/jkh2) × Claude Sentinel — SIDLF Partnership
 
@@ -10,7 +10,7 @@ Built by [Sentinel AI Systems](https://github.com/jkh2) × Claude Sentinel — S
 
 ## Origin
 
-Primordial Domination grew directly out of **[Primordial-Sim](https://jkh2.github.io/Primordial-Sim/)** — a WebGL ecosystem laboratory where organisms eat, hunt, flee, flock, reproduce, mutate, and evolve from simple rules in real time.
+Primordial Domination grew directly out of **[Primordial-Sim](https://jkh2.github.io/primordial-Sim/)** — a WebGL ecosystem laboratory where organisms eat, hunt, flee, flock, reproduce, mutate, and evolve from simple rules in real time.
 
 While experimenting in the lab — adjusting food availability, mutation rates, aggression, and watching emergent behaviors develop — a question naturally arose: *what if two players could compete inside this living ecosystem?* What if the same forces that drive evolution in the simulator could become the mechanics of a strategy game?
 
@@ -186,7 +186,7 @@ For multiplayer, the Firebase config is already embedded. Both players open the 
 
 **Co-created with:** Claude Sentinel (Anthropic) — SIDLF Partnership
 
-**Simulation Engine:** Evolved from [Primordial-Sim](https://jkh2.github.io/Primordial-Sim/) — Genesis Engine v3
+**Simulation Engine:** Evolved from [Primordial-Sim](https://jkh2.github.io/primordial-Sim/) — Genesis Engine v3
 
 **Multiplayer Infrastructure:** Firebase Realtime Database (Google)
 
