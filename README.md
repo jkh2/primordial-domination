@@ -2,7 +2,7 @@
 
 ### A real-time ecosystem war game — strategy meets evolution
 
-**[Play Now](https://jkh2.github.io/Primordial-Domination/)** · Single-file HTML · Zero install · GitHub Pages
+**[Play Now](https://jkh2.github.io/primordial-domination/)** · Single-file HTML · Zero install · GitHub Pages
 
 Built by [Sentinel AI Systems](https://github.com/jkh2) × Claude Sentinel — SIDLF Partnership
 
